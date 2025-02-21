@@ -578,12 +578,14 @@
 
             // Initialize audio context
             async function initAudio() {
+                if (audioContext) return false;
+                
                 try {
                     audioContext = new (window.AudioContext || window.webkitAudioContext)();
                     masterGainNode = audioContext.createGain();
                     masterGainNode.connect(audioContext.destination);
-                    masterGainNode.gain.value = musicVolume;
-
+                    masterGainNode.gain.value = 0.5;
+                    
                     const response = await fetch('https://assets.mixkit.co/music/preview/mixkit-game-level-music-689.mp3');
                     const arrayBuffer = await response.arrayBuffer();
                     const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
@@ -592,7 +594,7 @@
                     backgroundMusic.buffer = audioBuffer;
                     backgroundMusic.loop = true;
                     backgroundMusic.connect(masterGainNode);
-                    
+                    backgroundMusic.start();
                     return true;
                 } catch (error) {
                     console.error('Audio initialization failed:', error);
@@ -603,30 +605,21 @@
             // Toggle music
             toggleMusicBtn.addEventListener('click', async function() {
                 if (!audioContext) {
-                    const initialized = await initAudio();
-                    if (initialized) {
-                        backgroundMusic.start();
-                        isMusicPlaying = true;
-                        toggleMusicBtn.textContent = 'Music: On';
+                    const success = await initAudio();
+                    if (success) {
+                        this.textContent = 'Music: On';
                     }
-                } else if (isMusicPlaying) {
+                } else if (backgroundMusic) {
                     backgroundMusic.stop();
                     backgroundMusic = null;
-                    isMusicPlaying = false;
-                    toggleMusicBtn.textContent = 'Music: Off';
-                } else {
-                    await initAudio();
-                    backgroundMusic.start();
-                    isMusicPlaying = true;
-                    toggleMusicBtn.textContent = 'Music: On';
+                    this.textContent = 'Music: Off';
                 }
             });
 
             // Volume control
             volumeSlider.addEventListener('input', function() {
-                musicVolume = parseFloat(this.value);
                 if (masterGainNode) {
-                    masterGainNode.gain.value = musicVolume;
+                    masterGainNode.gain.value = parseFloat(this.value);
                 }
             });
 
@@ -780,21 +773,37 @@
                     const tile = tiles[i];
                     tile.y += baseSpeed;
                     
-                    // Draw asteroid (temporary circle until image is loaded)
+                    // Draw asteroid
+                    ctx.save();
                     ctx.beginPath();
                     ctx.arc(tile.x, tile.y, ASTEROID_SIZE/2, 0, Math.PI * 2);
-                    ctx.fillStyle = '#8B4513'; // Brown color for asteroids
-                    ctx.fill();
+                    ctx.fillStyle = '#8B4513';
                     ctx.strokeStyle = '#654321';
-                    ctx.lineWidth = 2;
+                    ctx.lineWidth = 3;
+                    ctx.fill();
                     ctx.stroke();
                     
-                    // Check if asteroid is out of bounds
+                    // Add crater details
+                    const craterPositions = [
+                        { x: -ASTEROID_SIZE/4, y: -ASTEROID_SIZE/4 },
+                        { x: ASTEROID_SIZE/4, y: ASTEROID_SIZE/4 },
+                        { x: 0, y: 0 }
+                    ];
+                    
+                    craterPositions.forEach(pos => {
+                        ctx.beginPath();
+                        ctx.arc(tile.x + pos.x, tile.y + pos.y, ASTEROID_SIZE/6, 0, Math.PI * 2);
+                        ctx.fillStyle = '#654321';
+                        ctx.fill();
+                    });
+                    
+                    ctx.restore();
+                    
+                    // Remove if out of bounds
                     if (tile.y > canvas.height + ASTEROID_SIZE) {
                         tiles.splice(i, 1);
                         combo = 1;
                         comboMultiplier.textContent = 'x1';
-                        // Don't end game, just remove the asteroid
                     }
                 }
                 
