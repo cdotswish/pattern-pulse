@@ -573,9 +573,34 @@
             appId: "1:404691518438:web:b3a1d8e849c4fb2f7f7d24"
         };
 
-        // Initialize Firebase
+        // Initialize Firebase and start loading scores
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
+        
+        // Verify database connection
+        const connectedRef = database.ref(".info/connected");
+        connectedRef.on("value", (snap) => {
+            if (snap.val() === true) {
+                console.log("Connected to Firebase:", firebaseConfig.databaseURL);
+                
+                // Test write to verify permissions
+                database.ref('test').set({
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                })
+                .then(() => {
+                    console.log("Successfully wrote to database");
+                    database.ref('test').remove(); // Clean up test data
+                })
+                .catch((error) => {
+                    console.error("Database write failed:", error);
+                });
+            } else {
+                console.error("Not connected to Firebase");
+            }
+        });
+
+        // Start loading scores immediately
+        loadHighScores();
 
         const canvas = document.getElementById("game-canvas");
         const ctx = canvas.getContext("2d");
