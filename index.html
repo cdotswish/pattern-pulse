@@ -758,355 +758,381 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script>
-        // Initialize Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyDFqxqZWxqRDGsXqvYqvp0_XpxXvB4sICg",
-            authDomain: "pattern-pulse.firebaseapp.com",
-            databaseURL: "https://pattern-pulse-default-rtdb.firebaseio.com",
-            projectId: "pattern-pulse",
-            storageBucket: "pattern-pulse.appspot.com",
-            messagingSenderId: "1234567890",
-            appId: "1:1234567890:web:1234567890abcdef"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
-        
-        // Wait for DOM to load
-        document.addEventListener('DOMContentLoaded', function() {
-            // Get DOM elements
-            const canvas = document.getElementById('gameCanvas');
-            const ctx = canvas.getContext('2d');
-            const mainMenu = document.getElementById('mainMenu');
-            const gameOverScreen = document.getElementById('gameOver');
-            const playBtn = document.getElementById('playBtn');
-            const howToPlayBtn = document.getElementById('howToPlayBtn');
-            const leaderboardBtn = document.getElementById('leaderboardBtn');
-            const backBtn = document.getElementById('backBtn');
-            const playerNameInput = document.getElementById('playerName');
-            const scoreDisplay = document.getElementById('score');
-            const levelDisplay = document.getElementById('level');
-            const howToPlayScreen = document.getElementById('howToPlay');
-            const leaderboardScreen = document.getElementById('leaderboard');
-            const ui = document.getElementById('ui');
-
-            // Button click handlers
-            howToPlayBtn.addEventListener('click', function() {
-                mainMenu.style.display = 'none';
-                howToPlayScreen.style.display = 'block';
+        // Initialize Firebase with error handling
+        try {
+            const firebaseConfig = {
+                apiKey: "AIzaSyDFqxqZWxqRDGsXqvYqvp0_XpxXvB4sICg",
+                authDomain: "pattern-pulse.firebaseapp.com",
+                databaseURL: "https://pattern-pulse-default-rtdb.firebaseio.com",
+                projectId: "pattern-pulse",
+                storageBucket: "pattern-pulse.appspot.com",
+                messagingSenderId: "1234567890",
+                appId: "1:1234567890:web:1234567890abcdef"
+            };
+            firebase.initializeApp(firebaseConfig);
+            const database = firebase.database();
+            
+            // Test Firebase connection
+            database.ref('.info/connected').on('value', function(snap) {
+                if (snap.val() === true) {
+                    console.log('Connected to Firebase');
+                } else {
+                    console.log('Not connected to Firebase');
+                }
             });
 
-            leaderboardBtn.addEventListener('click', function() {
-                mainMenu.style.display = 'none';
-                leaderboardScreen.style.display = 'block';
-                updateLeaderboard(); // Refresh leaderboard when viewing
-            });
+            // Wait for DOM to load
+            document.addEventListener('DOMContentLoaded', function() {
+                // Get DOM elements
+                const canvas = document.getElementById('gameCanvas');
+                const ctx = canvas.getContext('2d');
+                const mainMenu = document.getElementById('mainMenu');
+                const gameOverScreen = document.getElementById('gameOver');
+                const playBtn = document.getElementById('playBtn');
+                const howToPlayBtn = document.getElementById('howToPlayBtn');
+                const leaderboardBtn = document.getElementById('leaderboardBtn');
+                const backBtn = document.getElementById('backBtn');
+                const playerNameInput = document.getElementById('playerName');
+                const scoreDisplay = document.getElementById('score');
+                const levelDisplay = document.getElementById('level');
+                const howToPlayScreen = document.getElementById('howToPlay');
+                const leaderboardScreen = document.getElementById('leaderboard');
+                const ui = document.getElementById('ui');
 
-            backBtn.addEventListener('click', function() {
-                howToPlayScreen.style.display = 'none';
-                leaderboardScreen.style.display = 'none';
-                mainMenu.style.display = 'block';
-            });
+                // Button click handlers
+                howToPlayBtn.addEventListener('click', function() {
+                    mainMenu.style.display = 'none';
+                    howToPlayScreen.style.display = 'block';
+                });
 
-            // Add back buttons for both screens
-            document.querySelectorAll('.back-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
+                leaderboardBtn.addEventListener('click', function() {
+                    mainMenu.style.display = 'none';
+                    leaderboardScreen.style.display = 'block';
+                    updateLeaderboard(); // Refresh leaderboard when viewing
+                });
+
+                backBtn.addEventListener('click', function() {
                     howToPlayScreen.style.display = 'none';
                     leaderboardScreen.style.display = 'none';
                     mainMenu.style.display = 'block';
                 });
-            });
 
-            // Game constants
-            const INITIAL_SPEED = 1.0;
-            const INITIAL_SPAWN_INTERVAL = 2000;
-            const LEVEL_INCREASE_SCORE = 30;
-            const SPEED_INCREASE = 0.15;
-            const SPAWN_INTERVAL_DECREASE = 100;
-            const ASTEROID_SIZE = 40;
-            const MIN_SPAWN_INTERVAL = 600;
-            const PARTICLE_COUNT = 15;
-            const PARTICLE_SPEED = 3;
-            const PARTICLE_SIZE = 4;
-            const HIT_RADIUS = ASTEROID_SIZE * 0.7;
-
-            // Game state
-            let gameStarted = false;
-            let gameOver = false;
-            let score = 0;
-            let level = 1;
-            let combo = 1;
-            let baseSpeed = INITIAL_SPEED;
-            let spawnInterval = INITIAL_SPAWN_INTERVAL;
-            let tiles = [];
-            let particles = [];
-            let lastSpawnTime = 0;
-            let currentPlayer = '';
-            let bgMusic = document.getElementById('bgMusic');
-            bgMusic.volume = 0.3;
-
-            // Simple click handler
-            canvas.onclick = function(e) {
-                if (!gameStarted || gameOver) return;
-                
-                const rect = canvas.getBoundingClientRect();
-                const x = (e.clientX - rect.left) * (canvas.width / rect.width);
-                const y = (e.clientY - rect.top) * (canvas.height / rect.height);
-                
-                console.log('Click at:', x, y);
-                
-                tiles.forEach((tile, index) => {
-                    const dx = x - tile.x;
-                    const dy = y - tile.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-                    
-                    if (distance < ASTEROID_SIZE) {
-                        // Create explosion
-                        createParticles(tile.x, tile.y);
-                        
-                        // Remove asteroid
-                        tiles.splice(index, 1);
-                        
-                        // Update score
-                        score += 10;
-                        scoreDisplay.textContent = 'Score: ' + score;
-                        
-                        // Update level
-                        if (score >= level * LEVEL_INCREASE_SCORE) {
-                            level++;
-                            levelDisplay.textContent = 'Level: ' + level;
-                            baseSpeed += SPEED_INCREASE;
-                            spawnInterval = Math.max(MIN_SPAWN_INTERVAL, spawnInterval - SPAWN_INTERVAL_DECREASE);
-                        }
-                    }
-                });
-            };
-
-            // Simple touch handler
-            canvas.ontouchstart = function(e) {
-                e.preventDefault();
-                if (!gameStarted || gameOver) return;
-                
-                const rect = canvas.getBoundingClientRect();
-                const touch = e.touches[0];
-                const x = (touch.clientX - rect.left) * (canvas.width / rect.width);
-                const y = (touch.clientY - rect.top) * (canvas.height / rect.height);
-                
-                tiles.forEach((tile, index) => {
-                    const dx = x - tile.x;
-                    const dy = y - tile.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-                    
-                    if (distance < ASTEROID_SIZE) {
-                        createParticles(tile.x, tile.y);
-                        tiles.splice(index, 1);
-                        score += 10;
-                        scoreDisplay.textContent = 'Score: ' + score;
-                        
-                        if (score >= level * LEVEL_INCREASE_SCORE) {
-                            level++;
-                            levelDisplay.textContent = 'Level: ' + level;
-                            baseSpeed += SPEED_INCREASE;
-                            spawnInterval = Math.max(MIN_SPAWN_INTERVAL, spawnInterval - SPAWN_INTERVAL_DECREASE);
-                        }
-                    }
-                });
-            };
-
-            function createParticles(x, y) {
-                for (let i = 0; i < 15; i++) {
-                    const angle = (i / 15) * Math.PI * 2;
-                    const speed = 3 + Math.random() * 2;
-                    particles.push({
-                        x: x,
-                        y: y,
-                        vx: Math.cos(angle) * speed,
-                        vy: Math.sin(angle) * speed,
-                        life: 1,
-                        color: '#FFD700'
+                // Add back buttons for both screens
+                document.querySelectorAll('.back-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        howToPlayScreen.style.display = 'none';
+                        leaderboardScreen.style.display = 'none';
+                        mainMenu.style.display = 'block';
                     });
-                }
-            }
+                });
 
-            function updateParticles(ctx) {
-                for (let i = particles.length - 1; i >= 0; i--) {
-                    const p = particles[i];
-                    p.x += p.vx;
-                    p.y += p.vy;
-                    p.vy += 0.1; // gravity
-                    p.life *= 0.95;
+                // Game constants
+                const INITIAL_SPEED = 1.0;
+                const INITIAL_SPAWN_INTERVAL = 2000;
+                const LEVEL_INCREASE_SCORE = 30;
+                const SPEED_INCREASE = 0.15;
+                const SPAWN_INTERVAL_DECREASE = 100;
+                const ASTEROID_SIZE = 40;
+                const MIN_SPAWN_INTERVAL = 600;
+                const PARTICLE_COUNT = 15;
+                const PARTICLE_SPEED = 3;
+                const PARTICLE_SIZE = 4;
+                const HIT_RADIUS = ASTEROID_SIZE * 0.7;
+
+                // Game state
+                let gameStarted = false;
+                let gameOver = false;
+                let score = 0;
+                let level = 1;
+                let combo = 1;
+                let baseSpeed = INITIAL_SPEED;
+                let spawnInterval = INITIAL_SPAWN_INTERVAL;
+                let tiles = [];
+                let particles = [];
+                let lastSpawnTime = 0;
+                let currentPlayer = '';
+                let bgMusic = document.getElementById('bgMusic');
+                bgMusic.volume = 0.3;
+
+                // Simple click handler
+                canvas.onclick = function(e) {
+                    if (!gameStarted || gameOver) return;
                     
-                    ctx.beginPath();
-                    ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
-                    ctx.fillStyle = p.color + Math.floor(p.life * 255).toString(16).padStart(2, '0');
-                    ctx.fill();
+                    const rect = canvas.getBoundingClientRect();
+                    const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+                    const y = (e.clientY - rect.top) * (canvas.height / rect.height);
                     
-                    if (p.life < 0.01) particles.splice(i, 1);
-                }
-            }
-
-            function updateGame() {
-                if (!gameStarted || gameOver) return;
-
-                const ctx = canvas.getContext('2d');
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-                // Spawn new asteroids
-                const now = Date.now();
-                if (now - lastSpawnTime > spawnInterval) {
-                    const x = Math.random() * (canvas.width - ASTEROID_SIZE) + ASTEROID_SIZE/2;
-                    tiles.push({
-                        x: x,
-                        y: -ASTEROID_SIZE,
-                        rotation: Math.random() * Math.PI * 2
+                    console.log('Click at:', x, y);
+                    
+                    tiles.forEach((tile, index) => {
+                        const dx = x - tile.x;
+                        const dy = y - tile.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance < ASTEROID_SIZE) {
+                            // Create explosion
+                            createParticles(tile.x, tile.y);
+                            
+                            // Remove asteroid
+                            tiles.splice(index, 1);
+                            
+                            // Update score
+                            score += 10;
+                            scoreDisplay.textContent = 'Score: ' + score;
+                            
+                            // Update level
+                            if (score >= level * LEVEL_INCREASE_SCORE) {
+                                level++;
+                                levelDisplay.textContent = 'Level: ' + level;
+                                baseSpeed += SPEED_INCREASE;
+                                spawnInterval = Math.max(MIN_SPAWN_INTERVAL, spawnInterval - SPAWN_INTERVAL_DECREASE);
+                            }
+                        }
                     });
-                    lastSpawnTime = now;
+                };
+
+                // Simple touch handler
+                canvas.ontouchstart = function(e) {
+                    e.preventDefault();
+                    if (!gameStarted || gameOver) return;
+                    
+                    const rect = canvas.getBoundingClientRect();
+                    const touch = e.touches[0];
+                    const x = (touch.clientX - rect.left) * (canvas.width / rect.width);
+                    const y = (touch.clientY - rect.top) * (canvas.height / rect.height);
+                    
+                    tiles.forEach((tile, index) => {
+                        const dx = x - tile.x;
+                        const dy = y - tile.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance < ASTEROID_SIZE) {
+                            createParticles(tile.x, tile.y);
+                            tiles.splice(index, 1);
+                            score += 10;
+                            scoreDisplay.textContent = 'Score: ' + score;
+                            
+                            if (score >= level * LEVEL_INCREASE_SCORE) {
+                                level++;
+                                levelDisplay.textContent = 'Level: ' + level;
+                                baseSpeed += SPEED_INCREASE;
+                                spawnInterval = Math.max(MIN_SPAWN_INTERVAL, spawnInterval - SPAWN_INTERVAL_DECREASE);
+                            }
+                        }
+                    });
+                };
+
+                function createParticles(x, y) {
+                    for (let i = 0; i < 15; i++) {
+                        const angle = (i / 15) * Math.PI * 2;
+                        const speed = 3 + Math.random() * 2;
+                        particles.push({
+                            x: x,
+                            y: y,
+                            vx: Math.cos(angle) * speed,
+                            vy: Math.sin(angle) * speed,
+                            life: 1,
+                            color: '#FFD700'
+                        });
+                    }
                 }
 
-                // Update and draw asteroids
-                for (let i = tiles.length - 1; i >= 0; i--) {
-                    const tile = tiles[i];
-                    tile.y += baseSpeed;
+                function updateParticles(ctx) {
+                    for (let i = particles.length - 1; i >= 0; i--) {
+                        const p = particles[i];
+                        p.x += p.vx;
+                        p.y += p.vy;
+                        p.vy += 0.1; // gravity
+                        p.life *= 0.95;
+                        
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+                        ctx.fillStyle = p.color + Math.floor(p.life * 255).toString(16).padStart(2, '0');
+                        ctx.fill();
+                        
+                        if (p.life < 0.01) particles.splice(i, 1);
+                    }
+                }
+
+                function updateGame() {
+                    if (!gameStarted || gameOver) return;
+
+                    const ctx = canvas.getContext('2d');
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                    // Spawn new asteroids
+                    const now = Date.now();
+                    if (now - lastSpawnTime > spawnInterval) {
+                        const x = Math.random() * (canvas.width - ASTEROID_SIZE) + ASTEROID_SIZE/2;
+                        tiles.push({
+                            x: x,
+                            y: -ASTEROID_SIZE,
+                            rotation: Math.random() * Math.PI * 2
+                        });
+                        lastSpawnTime = now;
+                    }
+
+                    // Update and draw asteroids
+                    for (let i = tiles.length - 1; i >= 0; i--) {
+                        const tile = tiles[i];
+                        tile.y += baseSpeed;
+                        
+                        if (tile.y > canvas.height + ASTEROID_SIZE) {
+                            showGameOver();
+                            return;
+                        }
+
+                        // Draw asteroid
+                        ctx.save();
+                        ctx.translate(tile.x, tile.y);
+                        ctx.rotate(tile.rotation);
+                        
+                        ctx.beginPath();
+                        ctx.arc(0, 0, ASTEROID_SIZE/2, 0, Math.PI * 2);
+                        ctx.fillStyle = '#8B4513';
+                        ctx.fill();
+                        ctx.strokeStyle = '#654321';
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                        
+                        ctx.restore();
+                    }
+
+                    // Update and draw particles
+                    updateParticles(ctx);
+
+                    requestAnimationFrame(updateGame);
+                }
+
+                // Play button click handler
+                playBtn.addEventListener('click', function() {
+                    const playerName = playerNameInput.value.trim();
                     
-                    if (tile.y > canvas.height + ASTEROID_SIZE) {
-                        showGameOver();
+                    if (playerName === '') {
+                        nameError.textContent = 'Please enter your name!';
+                        nameError.style.display = 'block';
                         return;
                     }
-
-                    // Draw asteroid
-                    ctx.save();
-                    ctx.translate(tile.x, tile.y);
-                    ctx.rotate(tile.rotation);
                     
-                    ctx.beginPath();
-                    ctx.arc(0, 0, ASTEROID_SIZE/2, 0, Math.PI * 2);
-                    ctx.fillStyle = '#8B4513';
-                    ctx.fill();
-                    ctx.strokeStyle = '#654321';
-                    ctx.lineWidth = 2;
-                    ctx.stroke();
+                    nameError.style.display = 'none';
+                    currentPlayer = playerName;
+                    startGame();
+                });
+
+                function startGame() {
+                    // Reset game state
+                    gameStarted = true;
+                    gameOver = false;
+                    score = 0;
+                    level = 1;
+                    combo = 1;
+                    baseSpeed = INITIAL_SPEED;
+                    spawnInterval = INITIAL_SPAWN_INTERVAL;
+                    tiles = [];
+                    particles = [];
+                    lastSpawnTime = Date.now();
                     
-                    ctx.restore();
-                }
-
-                // Update and draw particles
-                updateParticles(ctx);
-
-                requestAnimationFrame(updateGame);
-            }
-
-            // Play button click handler
-            playBtn.addEventListener('click', function() {
-                const playerName = playerNameInput.value.trim();
-                
-                if (playerName === '') {
-                    nameError.textContent = 'Please enter your name!';
-                    nameError.style.display = 'block';
-                    return;
-                }
-                
-                nameError.style.display = 'none';
-                currentPlayer = playerName;
-                startGame();
-            });
-
-            function startGame() {
-                // Reset game state
-                gameStarted = true;
-                gameOver = false;
-                score = 0;
-                level = 1;
-                combo = 1;
-                baseSpeed = INITIAL_SPEED;
-                spawnInterval = INITIAL_SPAWN_INTERVAL;
-                tiles = [];
-                particles = [];
-                lastSpawnTime = Date.now();
-                
-                // Update UI
-                mainMenu.style.display = 'none';
-                canvas.style.display = 'block';
-                ui.style.display = 'block';
-                scoreDisplay.textContent = 'Score: 0';
-                levelDisplay.textContent = 'Level: 1';
-                
-                // Start music
-                bgMusic.pause();
-                bgMusic.currentTime = 0;
-                bgMusic.play().catch(error => {
-                    console.log("Audio play failed:", error);
-                });
-                
-                // Start game loop
-                requestAnimationFrame(updateGame);
-            }
-
-            function showGameOver() {
-                gameStarted = false;
-                gameOver = true;
-                
-                // Stop music with fade out
-                const fadeInterval = setInterval(() => {
-                    if (bgMusic.volume > 0.02) {
-                        bgMusic.volume -= 0.02;
-                    } else {
-                        bgMusic.pause();
-                        bgMusic.volume = 0.3;
-                        bgMusic.currentTime = 0;
-                        clearInterval(fadeInterval);
-                    }
-                }, 100);
-                
-                // Save score to Firebase
-                const newScoreRef = database.ref('scores').push();
-                newScoreRef.set({
-                    playerName: currentPlayer,
-                    score: score,
-                    timestamp: firebase.database.ServerValue.TIMESTAMP
-                });
-                
-                // Update leaderboard
-                updateLeaderboard();
-                
-                // Show game over screen
-                mainMenu.style.display = 'block';
-                canvas.style.display = 'none';
-                ui.style.display = 'none';
-            }
-
-            function updateLeaderboard() {
-                database.ref('scores')
-                    .orderByChild('score')
-                    .limitToLast(10)
-                    .once('value')
-                    .then((snapshot) => {
-                        const scores = [];
-                        snapshot.forEach((childSnapshot) => {
-                            scores.push(childSnapshot.val());
-                        });
-                        
-                        // Sort scores in descending order
-                        scores.sort((a, b) => b.score - a.score);
-                        
-                        // Update leaderboard display
-                        const list = document.getElementById('leaderboardList');
-                        list.innerHTML = '';
-                        
-                        scores.forEach((entry, index) => {
-                            const li = document.createElement('li');
-                            li.textContent = `${index + 1}. ${entry.playerName}: ${entry.score}`;
-                            list.appendChild(li);
-                        });
+                    // Update UI
+                    mainMenu.style.display = 'none';
+                    canvas.style.display = 'block';
+                    ui.style.display = 'block';
+                    scoreDisplay.textContent = 'Score: 0';
+                    levelDisplay.textContent = 'Level: 1';
+                    
+                    // Start music
+                    bgMusic.pause();
+                    bgMusic.currentTime = 0;
+                    bgMusic.play().catch(error => {
+                        console.log("Audio play failed:", error);
                     });
+                    
+                    // Start game loop
+                    requestAnimationFrame(updateGame);
+                }
+
+                function showGameOver() {
+                    gameStarted = false;
+                    gameOver = true;
+                    
+                    // Stop music with fade out
+                    const fadeInterval = setInterval(() => {
+                        if (bgMusic.volume > 0.02) {
+                            bgMusic.volume -= 0.02;
+                        } else {
+                            bgMusic.pause();
+                            bgMusic.volume = 0.3;
+                            bgMusic.currentTime = 0;
+                            clearInterval(fadeInterval);
+                        }
+                    }, 100);
+                    
+                    // Save score to Firebase with error handling
+                    const newScoreRef = database.ref('scores').push();
+                    newScoreRef.set({
+                        playerName: currentPlayer,
+                        score: score,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    }).then(() => {
+                        console.log('Score saved successfully');
+                        updateLeaderboard();
+                    }).catch(error => {
+                        console.error('Error saving score:', error);
+                    });
+                    
+                    // Update leaderboard
+                    updateLeaderboard();
+                    
+                    // Show game over screen
+                    mainMenu.style.display = 'block';
+                    canvas.style.display = 'none';
+                    ui.style.display = 'none';
+                }
+
+                function updateLeaderboard() {
+                    database.ref('scores')
+                        .orderByChild('score')
+                        .limitToLast(10)
+                        .once('value')
+                        .then((snapshot) => {
+                            const scores = [];
+                            snapshot.forEach((childSnapshot) => {
+                                scores.push(childSnapshot.val());
+                            });
+                            
+                            // Sort scores in descending order
+                            scores.sort((a, b) => b.score - a.score);
+                            
+                            // Update leaderboard display
+                            const list = document.getElementById('leaderboardList');
+                            list.innerHTML = '';
+                            
+                            scores.forEach((entry, index) => {
+                                const li = document.createElement('li');
+                                li.textContent = `${index + 1}. ${entry.playerName}: ${entry.score}`;
+                                list.appendChild(li);
+                            });
+                            console.log('Leaderboard updated with', scores.length, 'scores');
+                        })
+                        .catch(error => {
+                            console.error('Error updating leaderboard:', error);
+                            const list = document.getElementById('leaderboardList');
+                            list.innerHTML = '<li>Error loading leaderboard. Please try again.</li>';
+                        });
+                }
+                
+                // Initial leaderboard load
+                updateLeaderboard();
+                
+                // Listen for new scores in real-time
+                database.ref('scores').on('child_added', () => {
+                    console.log('New score added, updating leaderboard');
+                    updateLeaderboard();
+                });
+
+            } catch (error) {
+                console.error('Firebase initialization error:', error);
             }
             
-            // Initial leaderboard load
-            updateLeaderboard();
-            
-            // Listen for new scores
-            database.ref('scores').on('child_added', () => {
-                updateLeaderboard();
-            });
-                
             // Initialize game
             function init() {
                 resizeCanvas();
