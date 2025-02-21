@@ -33,9 +33,12 @@
             -moz-user-select: none;
             -ms-user-select: none;
             user-select: none;
+            overflow: hidden;
         }
 
         canvas {
+            width: 100%;
+            height: 100%;
             background: transparent;
             border: none;
             box-shadow: none;
@@ -566,6 +569,67 @@
             const streakCounter = document.getElementById('streakCounter');
             const comboMultiplier = document.getElementById('comboMultiplier');
 
+            // Audio context and settings
+            let audioContext = null;
+            let backgroundMusic = null;
+            let masterGainNode = null;
+            let musicVolume = 0.5;
+            let isMusicPlaying = false;
+
+            // Initialize audio context
+            async function initAudio() {
+                try {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    masterGainNode = audioContext.createGain();
+                    masterGainNode.connect(audioContext.destination);
+                    masterGainNode.gain.value = musicVolume;
+
+                    const response = await fetch('https://assets.mixkit.co/music/preview/mixkit-game-level-music-689.mp3');
+                    const arrayBuffer = await response.arrayBuffer();
+                    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                    
+                    backgroundMusic = audioContext.createBufferSource();
+                    backgroundMusic.buffer = audioBuffer;
+                    backgroundMusic.loop = true;
+                    backgroundMusic.connect(masterGainNode);
+                    
+                    return true;
+                } catch (error) {
+                    console.error('Audio initialization failed:', error);
+                    return false;
+                }
+            }
+
+            // Toggle music
+            toggleMusicBtn.addEventListener('click', async function() {
+                if (!audioContext) {
+                    const initialized = await initAudio();
+                    if (initialized) {
+                        backgroundMusic.start();
+                        isMusicPlaying = true;
+                        toggleMusicBtn.textContent = 'Music: On';
+                    }
+                } else if (isMusicPlaying) {
+                    backgroundMusic.stop();
+                    backgroundMusic = null;
+                    isMusicPlaying = false;
+                    toggleMusicBtn.textContent = 'Music: Off';
+                } else {
+                    await initAudio();
+                    backgroundMusic.start();
+                    isMusicPlaying = true;
+                    toggleMusicBtn.textContent = 'Music: On';
+                }
+            });
+
+            // Volume control
+            volumeSlider.addEventListener('input', function() {
+                musicVolume = parseFloat(this.value);
+                if (masterGainNode) {
+                    masterGainNode.gain.value = musicVolume;
+                }
+            });
+
             // Game state
             let gameStarted = false;
             let score = 0;
@@ -577,6 +641,26 @@
             let lastSpawnTime = 0;
             let currentPlayer = '';
             let highScore = 0;
+
+            // Game configuration
+            const ASTEROID_SIZE = window.innerWidth < 768 ? 30 : 40; // Smaller asteroids on mobile
+            const MOBILE_MARGIN = window.innerWidth < 768 ? 40 : 60; // Margin from edges on mobile
+            
+            // Responsive canvas sizing
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                
+                // Update spawn points based on new size
+                spawnPoints = [
+                    { x: MOBILE_MARGIN, y: -ASTEROID_SIZE },
+                    { x: canvas.width / 2, y: -ASTEROID_SIZE },
+                    { x: canvas.width - MOBILE_MARGIN, y: -ASTEROID_SIZE }
+                ];
+            }
+
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas(); // Initial sizing
 
             // Menu button handlers
             playBtn.addEventListener('click', function() {
@@ -696,119 +780,102 @@
                     const tile = tiles[i];
                     tile.y += baseSpeed;
                     
-                    // Draw tile
+                    // Draw asteroid (temporary circle until image is loaded)
                     ctx.beginPath();
-                    ctx.arc(tile.x, tile.y, 20, 0, Math.PI * 2);
-                    ctx.fillStyle = '#ffcc00';
+                    ctx.arc(tile.x, tile.y, ASTEROID_SIZE/2, 0, Math.PI * 2);
+                    ctx.fillStyle = '#8B4513'; // Brown color for asteroids
                     ctx.fill();
+                    ctx.strokeStyle = '#654321';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
                     
-                    if (tile.y > canvas.height) {
-                        gameOver();
-                        return;
+                    // Check if asteroid is out of bounds
+                    if (tile.y > canvas.height + ASTEROID_SIZE) {
+                        tiles.splice(i, 1);
+                        combo = 1;
+                        comboMultiplier.textContent = 'x1';
+                        // Don't end game, just remove the asteroid
                     }
                 }
-
+                
                 requestAnimationFrame(updateGame);
             }
 
             // Spawn new tile
             function spawnTile() {
+                const spawnPoint = spawnPoints[Math.floor(Math.random() * spawnPoints.length)];
                 tiles.push({
-                    x: Math.random() * (canvas.width - 40) + 20,
-                    y: -20
+                    x: spawnPoint.x,
+                    y: spawnPoint.y,
+                    rotation: Math.random() * Math.PI * 2
                 });
             }
 
-            // Game over
-            function gameOver() {
-                gameStarted = false;
-                if (score > highScore) {
-                    highScore = score;
-                    highScoreDisplay.textContent = `High Score: ${highScore}`;
-                    
-                    // Save to Firebase
-                    database.ref('scores').push({
-                        name: currentPlayer,
-                        score: score
-                    });
-                }
-                
-                // Show menu
-                mainMenu.style.display = 'block';
-                canvas.style.display = 'none';
-                ui.style.display = 'none';
-                dailyChallenge.style.display = 'none';
-                stats.style.display = 'none';
-                streakCounter.style.display = 'none';
-                comboMultiplier.style.display = 'none';
-            }
-
-            // Handle clicks
-            canvas.addEventListener('click', function(e) {
+            // Handle clicks/touches
+            function handleInteraction(x, y) {
                 if (!gameStarted) return;
-
-                const rect = canvas.getBoundingClientRect();
-                const x = (e.clientX - rect.left) * (canvas.width / rect.width);
-                const y = (e.clientY - rect.top) * (canvas.height / rect.height);
 
                 for (let i = tiles.length - 1; i >= 0; i--) {
                     const tile = tiles[i];
-                    const dx = x - tile.x;
-                    const dy = y - tile.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    const distance = Math.sqrt(Math.pow(x - tile.x, 2) + Math.pow(y - tile.y, 2));
                     
-                    if (distance < 20) {
+                    if (distance < ASTEROID_SIZE/2) {
                         tiles.splice(i, 1);
                         score += 10 * combo;
                         combo++;
+                        
                         scoreDisplay.textContent = `Score: ${score}`;
                         comboMultiplier.textContent = `x${combo}`;
+                        streakCounter.textContent = `Streak: ${combo - 1}`;
                         
-                        if (score >= level * 1000) {
+                        if (score > level * 500) {
                             level++;
+                            levelDisplay.textContent = `Level: ${level}`;
                             baseSpeed += 0.5;
                             spawnInterval = Math.max(300, spawnInterval - 50);
-                            levelDisplay.textContent = `Level: ${level}`;
                         }
-                        return;
+                        
+                        break;
                     }
                 }
-                
-                // Miss - reset combo
-                combo = 1;
-                comboMultiplier.textContent = 'x1';
+            }
+
+            canvas.addEventListener('click', function(e) {
+                const rect = canvas.getBoundingClientRect();
+                const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+                const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+                handleInteraction(x, y);
+            });
+
+            canvas.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                const rect = canvas.getBoundingClientRect();
+                const touch = e.touches[0];
+                const x = (touch.clientX - rect.left) * (canvas.width / rect.width);
+                const y = (touch.clientY - rect.top) * (canvas.height / rect.height);
+                handleInteraction(x, y);
             });
 
             // Initialize game
             function init() {
-                // Set canvas size
-                canvas.width = 800;
-                canvas.height = 600;
-                
-                // Create stars background
+                resizeCanvas();
                 createStars();
-                
-                // Initialize daily challenge
                 initDailyChallenge();
-                
-                // Update leaderboard
                 updateLeaderboard();
+                
+                gameStarted = false;
+                score = 0;
+                level = 1;
+                combo = 1;
+                tiles = [];
+                baseSpeed = 2;
+                spawnInterval = 1000;
+                
+                scoreDisplay.textContent = `Score: ${score}`;
+                levelDisplay.textContent = `Level: ${level}`;
+                highScoreDisplay.textContent = `High Score: ${highScore}`;
             }
 
-            // Create stars background
-            function createStars() {
-                const starsContainer = document.getElementById('starsContainer');
-                for (let i = 0; i < 100; i++) {
-                    const star = document.createElement('div');
-                    star.className = 'star';
-                    star.style.left = Math.random() * 100 + '%';
-                    star.style.top = Math.random() * 100 + '%';
-                    star.style.animationDelay = Math.random() * 3 + 's';
-                    starsContainer.appendChild(star);
-                }
-            }
-
-            // Initialize everything
             init();
         });
     </script>
