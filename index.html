@@ -1,239 +1,647 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Pattern Pulse</title>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asteroid Blaster</title>
     <style>
         body {
             margin: 0;
             padding: 0;
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            background: #000;
-            font-family: Arial, sans-serif;
-            overflow: hidden;
         }
-
-        #gameCanvas {
-            display: none;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+        .container {
+            text-align: center;
+            position: relative;
+            width: 900px;
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
         }
-
-        .ui {
-            position: absolute;
-            top: 10px;
-            left: 10px;
+        #game-canvas {
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            background-color: rgba(0, 0, 0, 0.6);
+            margin: 15px auto;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+        }
+        .stats-display {
             color: white;
             font-size: 20px;
-            z-index: 1;
-            display: none;
-        }
-
-        #mainMenu {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            color: white;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 20px;
+            margin: 15px 0;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 15px;
             border-radius: 10px;
-            z-index: 100;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
-
-        h1 {
-            color: #FFD700;
-            font-size: 36px;
-            margin-bottom: 20px;
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
-
-        button {
-            background: #4CAF50;
-            border: none;
+        .stat-label {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        .stat-value {
+            color: #fff;
+            font-size: 24px;
+        }
+        .btn {
+            padding: 12px 25px;
+            font-size: 18px;
+            background-color: #e74c3c;
             color: white;
-            padding: 15px 32px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 16px;
-            margin: 4px 2px;
+            border: none;
+            border-radius: 8px;
             cursor: pointer;
-            border-radius: 4px;
-            transition: background-color 0.3s;
-            width: 200px;
+            margin: 10px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
         }
-
-        button:hover {
-            background: #45a049;
+        .btn:hover {
+            background-color: #c0392b;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.3);
         }
-
-        #playerName {
-            padding: 10px;
-            font-size: 16px;
-            margin-bottom: 10px;
-            border-radius: 4px;
-            border: none;
-            width: 200px;
+        .btn:active {
+            transform: translateY(1px);
         }
-
-        #howToPlay, #leaderboard {
+        .screen {
             display: none;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.8);
-            padding: 20px;
-            border-radius: 10px;
             text-align: center;
-            color: white;
-            z-index: 100;
-            min-width: 300px;
         }
-
-        #leaderboardList {
-            list-style: none;
-            padding: 0;
+        #menu-screen {
+            display: block;
+        }
+        .menu-content {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+        }
+        .instructions {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            text-align: left;
+        }
+        .instructions h2 {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .instructions ul {
+            margin: 10px 0;
+            padding-left: 30px;
+        }
+        .instructions li {
+            margin: 5px 0;
+        }
+        .tab-content {
+            display: none;
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
             margin: 20px 0;
         }
-
-        #leaderboardList li {
-            padding: 5px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        .tab-content.active {
+            display: block;
         }
-
-        #gameOver {
-            display: none;
+        .leaderboard-entry {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            background-color: rgba(255, 255, 255, 0.1);
+            margin: 5px 0;
+            border-radius: 5px;
+        }
+        input[type="text"] {
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: none;
+            margin: 10px;
+            width: 200px;
+        }
+        .level-display {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            text-align: center;
-            color: white;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 20px;
-            border-radius: 10px;
-            z-index: 100;
+            font-size: 48px;
+            font-weight: bold;
+            color: #e74c3c;
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            display: none;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px 40px;
+            border-radius: 15px;
+            z-index: 10;
+        }
+        .wave-message {
+            font-size: 24px;
+            color: #fff;
+            margin-top: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
     </style>
 </head>
 <body>
-    <div class="space-background"></div>
-    <div class="stars" id="starsContainer"></div>
-    <div class="game-container">
-        <canvas id="gameCanvas" style="display: none;"></canvas>
-        <div id="ui" style="display: none;">
-            <div id="score">Score: 0</div>
-            <div id="level">Level: 1</div>
-        </div>
-        
-        <div class="menu" id="mainMenu">
-            <h1>Pattern Pulse</h1>
-            <input type="text" id="playerName" placeholder="Enter your name" maxlength="20" required>
-            <div class="error-message" id="nameError" style="display: none;">Please enter your name to play!</div>
-            <div class="high-score" id="highScore">High Score: 0</div>
-            <div class="menu-options">
-                <button class="btn" id="playBtn">Play Game</button>
-                <button class="btn" id="howToPlayBtn">How to Play</button>
-                <button class="btn" id="leaderboardBtn">Leaderboard</button>
+    <div class="container">
+        <!-- Menu Screen -->
+        <div id="menu-screen" class="screen">
+            <h1>Asteroid Blaster</h1>
+            <div class="menu-content">
+                <input type="text" id="player-name" placeholder="Enter your name" maxlength="15">
+                <button class="btn" onclick="startGame()">Start Game</button>
             </div>
-            <div class="instructions" id="instructions" style="display: none;">
-                Click the falling asteroids before they reach the bottom.<br>
-                Build combos for higher scores!<br>
-                The game speeds up as you progress.<br>
-                <button class="btn" id="backBtn" style="margin-top: 20px;">Back to Menu</button>
+            
+            <button class="btn" onclick="showTab('leaderboard')">Leaderboard</button>
+            
+            <!-- Instructions -->
+            <div class="instructions">
+                <h2>How to Play</h2>
+                <p>Click on asteroids to destroy them before they reach the bottom!</p>
+                <p>Complete each level by destroying the required number of asteroids.</p>
+                <p>Each level gets progressively harder with:</p>
+                <ul>
+                    <li>Faster asteroids</li>
+                    <li>More frequent spawns</li>
+                    <li>More asteroids needed to progress</li>
+                </ul>
+                <p>If any asteroid reaches the bottom, it's game over!</p>
             </div>
-            <div id="leaderboard" class="leaderboard">
+            
+            <!-- Leaderboard Tab -->
+            <div id="leaderboard-tab" class="tab-content">
                 <h2>Top Scores</h2>
-                <ul id="leaderboardList"></ul>
+                <div id="leaderboard-list"></div>
             </div>
         </div>
-        <div id="howToPlay">
-            <h2>How to Play</h2>
-            <p>Click the falling asteroids before they reach the bottom.</p>
-            <p>Build combos for higher scores!</p>
-            <p>The game speeds up as you progress.</p>
-            <button class="back-btn" id="howToPlayBackBtn">Back to Menu</button>
-        </div>
-        <div id="leaderboard">
-            <h2>Leaderboard</h2>
-            <ul id="leaderboardList"></ul>
-            <button class="back-btn" id="leaderboardBackBtn">Back to Menu</button>
-        </div>
-    </div>
 
-    <div class="audio-controls">
-        <button id="musicToggle" onclick="toggleMusic()" title="Toggle Music">🔈</button>
-        <input type="range" id="volumeSlider" class="volume-slider" min="0" max="1" step="0.1" value="0.5" oninput="updateVolume(this.value)">
-    </div>
-
-    <div class="daily-challenges" id="dailyChallenges">
-        <h2>Daily Challenges</h2>
-        <div class="challenge-list" id="challengeList"></div>
-    </div>
-
-    <div class="stats" id="statsPanel">
-        <h2>Your Stats</h2>
-        <div class="stats-grid">
-            <div class="stat-item">
-                <span class="stat-label">High Score</span>
-                <span class="stat-value" id="highScore">0</span>
+        <!-- Game Screen -->
+        <div id="game-screen" class="screen">
+            <div class="stats-display">
+                <div class="stat-item">
+                    <span class="stat-label">LEVEL:</span>
+                    <span class="stat-value" id="level">1</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">SCORE:</span>
+                    <span class="stat-value" id="score">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">REMAINING:</span>
+                    <span class="stat-value" id="target">10</span>
+                </div>
             </div>
-            <div class="stat-item">
-                <span class="stat-label">Games Played</span>
-                <span class="stat-value" id="gamesPlayed">0</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-label">Longest Streak</span>
-                <span class="stat-value" id="longestStreak">0</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-label">Accuracy</span>
-                <span class="stat-value" id="accuracy">0%</span>
-            </div>
+            <canvas id="game-canvas" width="800" height="600"></canvas>
+            <div class="level-display" id="level-display"></div>
+            <button class="btn" id="menu-btn" onclick="returnToMenu()">Return to Menu</button>
         </div>
     </div>
 
-    <div class="achievements" id="achievements" style="display: none;">
-        <h3>Achievements</h3>
-        <div id="achievementsList"></div>
-    </div>
+    <script>
+        const canvas = document.getElementById("game-canvas");
+        const ctx = canvas.getContext("2d");
+        const levelDisplay = document.getElementById("level-display");
 
-    <div class="achievement-popup" id="achievementPopup" style="display: none;">
-        <h2>Achievement Unlocked!</h2>
-        <p id="achievementName"></p>
-    </div>
+        let score = 0;
+        let level = 1;
+        let progress = 0;
+        let levelTarget = 10;
+        let asteroids = [];
+        let explosions = [];
+        let lastSpawnTime = Date.now();
+        let baseSpawnInterval = 1000;
+        let spawnInterval = baseSpawnInterval;
+        let baseAsteroidSpeed = 2;
+        let asteroidSpeed = baseAsteroidSpeed;
+        let gameActive = true;
+        let spawnEnabled = true;
+        let currentPlayer = '';
+        let highScores = [];
+        let animationFrameId;
 
-    <div class="streak-counter" id="streakCounter" style="display: none;">Streak: 0</div>
-    <div class="combo-multiplier" id="comboMultiplier" style="display: none;">x1</div>
+        // Initialize audio context
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-    <div class="daily-challenge" id="dailyChallenge" style="display: none;">
-        <h3>Daily Challenge</h3>
-        <p id="challengeDescription"></p>
-        <p id="challengeProgress"></p>
-    </div>
+        function playExplosionSound() {
+            // Create oscillator for the base explosion sound
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            // Create noise for the explosion
+            const bufferSize = audioContext.sampleRate * 0.1; // 100ms buffer
+            const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+            const output = noiseBuffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                output[i] = Math.random() * 2 - 1;
+            }
+            
+            // Create noise source
+            const noise = audioContext.createBufferSource();
+            noise.buffer = noiseBuffer;
+            
+            // Create filters for shaping the sound
+            const filter = audioContext.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(1000, audioContext.currentTime);
+            filter.frequency.exponentialRampToValueAtTime(50, audioContext.currentTime + 0.1);
+            
+            // Set up gain envelope
+            gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+            
+            // Connect nodes
+            noise.connect(filter);
+            filter.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            // Play the sound
+            noise.start();
+            noise.stop(audioContext.currentTime + 0.2);
+        }
 
-    <div class="stats" id="stats" style="display: none;">
-        <h3>Stats</h3>
-        <p>Perfect Hits: <span id="perfectHits">0</span></p>
-        <p>Best Streak: <span id="bestStreak">0</span></p>
-        <p>Power-ups Used: <span id="powerupsUsed">0</span></p>
-    </div>
+        function loadHighScores() {
+            const savedScores = localStorage.getItem('asteroidBlasterScores');
+            if (savedScores) {
+                highScores = JSON.parse(savedScores);
+                updateLeaderboard();
+            }
+        }
 
-    <div class="leaderboard" id="leaderboard" style="display: none;">
-        <h2>Global Leaderboard</h2>
-        <button class="close-btn" id="closeLeaderboard">×</button>
-        <ul class="leaderboard-list" id="leaderboardList"></ul>
-    </div>
+        // Update leaderboard display
+        function updateLeaderboard() {
+            const leaderboardList = document.getElementById('leaderboard-list');
+            leaderboardList.innerHTML = '';
+            
+            // Sort scores in descending order
+            highScores.sort((a, b) => b.score - a.score);
+            
+            // Keep only top 10 scores
+            highScores = highScores.slice(0, 10);
+            
+            // Display scores
+            highScores.forEach((entry, index) => {
+                const scoreEntry = document.createElement('div');
+                scoreEntry.className = 'leaderboard-entry';
+                scoreEntry.innerHTML = `
+                    <span>${index + 1}. ${entry.name}</span>
+                    <span>Score: ${entry.score} (Level ${entry.level})</span>
+                `;
+                leaderboardList.appendChild(scoreEntry);
+            });
+        }
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    <script src="game.js"></script>
+        function updateHighScores() {
+            highScores.push({
+                name: currentPlayer,
+                score: score,
+                level: level
+            });
+            
+            // Sort and keep top 10
+            highScores.sort((a, b) => b.score - a.score);
+            highScores = highScores.slice(0, 10);
+            
+            // Save to localStorage
+            localStorage.setItem('asteroidBlasterScores', JSON.stringify(highScores));
+            updateLeaderboard();
+        }
+
+        function showTab(tabName) {
+            // Hide all tab content
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.style.display = 'none';
+            });
+            
+            // Show selected tab
+            if (tabName === 'leaderboard') {
+                document.getElementById('leaderboard-tab').style.display = 'block';
+            }
+        }
+
+        class Asteroid {
+            constructor() {
+                this.x = Math.random() * (canvas.width - 40);
+                this.y = -40;
+                this.size = 30 + Math.random() * 20;
+                this.speed = (0.5 + Math.random() * 1) * (1 + (level - 1) * 0.1);
+                this.rotation = Math.random() * Math.PI * 2;
+                this.rotationSpeed = (Math.random() - 0.5) * 0.05;
+                // Generate random craters
+                this.craters = [];
+                const numCraters = 3 + Math.floor(Math.random() * 4);
+                for (let i = 0; i < numCraters; i++) {
+                    this.craters.push({
+                        x: Math.random() * 0.8 + 0.1, // Relative position (0.1 to 0.9)
+                        y: Math.random() * 0.8 + 0.1,
+                        size: Math.random() * 0.3 + 0.1 // Relative size (0.1 to 0.4)
+                    });
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x + this.size / 2, this.y + this.size / 2);
+                ctx.rotate(this.rotation);
+
+                // Main asteroid body
+                ctx.beginPath();
+                ctx.arc(0, 0, this.size / 2, 0, Math.PI * 2);
+                const gradient = ctx.createRadialGradient(
+                    -this.size/6, -this.size/6, 0,
+                    0, 0, this.size/2
+                );
+                gradient.addColorStop(0, '#a0a0a0');
+                gradient.addColorStop(1, '#505050');
+                ctx.fillStyle = gradient;
+                ctx.fill();
+                ctx.strokeStyle = '#404040';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Draw craters
+                this.craters.forEach(crater => {
+                    const craterX = (crater.x - 0.5) * this.size;
+                    const craterY = (crater.y - 0.5) * this.size;
+                    const craterSize = crater.size * this.size;
+
+                    ctx.beginPath();
+                    ctx.arc(craterX, craterY, craterSize/2, 0, Math.PI * 2);
+                    const craterGradient = ctx.createRadialGradient(
+                        craterX - craterSize/4, craterY - craterSize/4, 0,
+                        craterX, craterY, craterSize/2
+                    );
+                    craterGradient.addColorStop(0, '#606060');
+                    craterGradient.addColorStop(1, '#404040');
+                    ctx.fillStyle = craterGradient;
+                    ctx.fill();
+                });
+
+                ctx.restore();
+                this.rotation += this.rotationSpeed;
+            }
+
+            update() {
+                this.y += this.speed * asteroidSpeed;
+            }
+        }
+
+        class Explosion {
+            constructor(x, y, size) {
+                this.x = x;
+                this.y = y;
+                this.size = size;
+                this.particles = [];
+                this.lifetime = 30;
+                
+                // Create particles
+                for (let i = 0; i < 15; i++) {
+                    const angle = (Math.PI * 2 / 15) * i;
+                    const speed = 2 + Math.random() * 2;
+                    this.particles.push({
+                        x: x,
+                        y: y,
+                        vx: Math.cos(angle) * speed,
+                        vy: Math.sin(angle) * speed,
+                        size: size / 8,
+                        alpha: 1
+                    });
+                }
+            }
+
+            update() {
+                this.lifetime--;
+                
+                for (const particle of this.particles) {
+                    particle.x += particle.vx;
+                    particle.y += particle.vy;
+                    particle.alpha = Math.max(0, particle.alpha - 0.05);
+                }
+                
+                return this.lifetime > 0;
+            }
+
+            draw() {
+                for (const particle of this.particles) {
+                    ctx.beginPath();
+                    ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(255, 100, 50, ${particle.alpha})`;
+                    ctx.fill();
+                }
+            }
+        }
+
+        function spawnAsteroid() {
+            if (Date.now() - lastSpawnTime > spawnInterval) {
+                asteroids.push(new Asteroid());
+                lastSpawnTime = Date.now();
+            }
+        }
+
+        function startGame() {
+            // Resume audio context if suspended
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+            
+            const playerName = document.getElementById('player-name').value.trim();
+            if (!playerName) {
+                alert('Please enter your name!');
+                return;
+            }
+            currentPlayer = playerName;
+            
+            // Reset game state
+            score = 0;
+            level = 1;
+            progress = 0;
+            levelTarget = 10;
+            asteroids = [];
+            gameActive = true;
+            spawnEnabled = true;
+            lastSpawnTime = Date.now();
+            spawnInterval = baseSpawnInterval;
+            asteroidSpeed = baseAsteroidSpeed;
+            
+            // Switch screens
+            document.getElementById('menu-screen').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'block';
+            document.getElementById('menu-btn').style.display = 'none';
+            
+            // Start the game
+            startWave();
+            updateStats();
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+            gameLoop();
+        }
+
+        function returnToMenu() {
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+            gameActive = false;
+            document.getElementById('game-screen').style.display = 'none';
+            document.getElementById('menu-screen').style.display = 'block';
+            document.getElementById('menu-btn').style.display = 'none';
+            showTab('leaderboard');
+        }
+
+        function startWave() {
+            const levelDisplay = document.getElementById('level-display');
+            levelDisplay.innerHTML = `Level ${level}!<div class="wave-message">Destroy ${levelTarget} Asteroids</div>`;
+            levelDisplay.style.display = 'block';
+            
+            // Disable spawning during the wave announcement
+            spawnEnabled = false;
+            
+            // Clear any existing asteroids
+            asteroids = [];
+            
+            // Start the wave after a delay
+            setTimeout(() => {
+                levelDisplay.style.display = 'none';
+                spawnEnabled = true;
+            }, 2000);
+        }
+
+        function checkLevelComplete() {
+            if (progress >= levelTarget) {
+                // Stop spawning and clear existing asteroids
+                spawnEnabled = false;
+                asteroids = [];
+                
+                // Increase level and adjust difficulty
+                level++;
+                progress = 0;
+                levelTarget = Math.floor(10 * Math.pow(1.5, level - 1));
+                spawnInterval *= 0.9;
+                asteroidSpeed *= 1.1;
+                
+                // Show level complete message and start next wave
+                const levelDisplay = document.getElementById('level-display');
+                levelDisplay.innerHTML = `Level ${level-1} Complete!<div class="wave-message">Get Ready...</div>`;
+                levelDisplay.style.display = 'block';
+                
+                // Start next wave after a delay
+                setTimeout(() => {
+                    startWave();
+                }, 3000);
+                
+                updateStats();
+            }
+        }
+
+        function gameLoop() {
+            if (!gameActive) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (spawnEnabled && Date.now() - lastSpawnTime > spawnInterval) {
+                spawnAsteroid();
+                lastSpawnTime = Date.now();
+            }
+
+            // Update and draw asteroids
+            for (let i = asteroids.length - 1; i >= 0; i--) {
+                const asteroid = asteroids[i];
+                asteroid.update();
+                asteroid.draw();
+
+                if (asteroid.y > canvas.height) {
+                    gameOver();
+                    return;
+                }
+            }
+
+            // Update and draw explosions
+            for (let i = explosions.length - 1; i >= 0; i--) {
+                const explosion = explosions[i];
+                if (!explosion.update()) {
+                    explosions.splice(i, 1);
+                } else {
+                    explosion.draw();
+                }
+            }
+
+            checkLevelComplete();
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        function gameOver() {
+            gameActive = false;
+            spawnEnabled = false;
+            
+            const levelDisplay = document.getElementById('level-display');
+            levelDisplay.innerHTML = `Game Over!<div class="wave-message">Score: ${score}</div>`;
+            levelDisplay.style.display = 'block';
+            
+            document.getElementById('menu-btn').style.display = 'block';
+            
+            // Update high scores
+            updateHighScores();
+        }
+
+        function updateStats() {
+            document.getElementById("score").textContent = score;
+            document.getElementById("level").textContent = level;
+            let remaining = Math.max(0, levelTarget - progress);
+            document.getElementById("target").textContent = remaining;
+        }
+
+        canvas.addEventListener("click", (e) => {
+            if (!gameActive) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+
+            // Check collision with asteroids
+            for (let i = asteroids.length - 1; i >= 0; i--) {
+                const asteroid = asteroids[i];
+                const dx = clickX - asteroid.x;
+                const dy = clickY - asteroid.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < asteroid.size) {
+                    // Play explosion sound
+                    playExplosionSound();
+                    
+                    // Create explosion
+                    explosions.push(new Explosion(asteroid.x, asteroid.y, asteroid.size));
+                    
+                    // Remove asteroid and update score
+                    asteroids.splice(i, 1);
+                    score += 10 * level;
+                    progress++;
+                    updateStats();
+                    break;
+                }
+            }
+        });
+
+        // Initialize the game
+        loadHighScores();
+        showTab('leaderboard');
+    </script>
 </body>
 </html>
