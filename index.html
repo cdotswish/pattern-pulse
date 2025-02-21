@@ -233,6 +233,7 @@
             
             <!-- Leaderboard Tab -->
             <div id="leaderboard-tab" class="tab-content">
+                <h2>Global Top Scores</h2>
                 <div id="leaderboard-list"></div>
             </div>
         </div>
@@ -341,7 +342,11 @@
                     scores.push(childSnapshot.val());
                 });
                 highScores = scores.reverse(); // Reverse to get descending order
-                updateLeaderboard();
+                
+                // Only update display if leaderboard tab is active
+                if (document.getElementById('leaderboard-tab').classList.contains('active')) {
+                    updateLeaderboard();
+                }
             });
         }
 
@@ -374,11 +379,9 @@
             leaderboardList.innerHTML = '';
             
             if (highScores.length === 0) {
-                leaderboardList.innerHTML += '<div class="leaderboard-entry">No scores yet!</div>';
+                leaderboardList.innerHTML = '<div class="leaderboard-entry">No scores yet!</div>';
                 return;
             }
-            
-            leaderboardList.innerHTML += '<h3>Global Top Scores</h3>';
             
             highScores.forEach((entry, index) => {
                 const scoreEntry = document.createElement('div');
@@ -409,9 +412,10 @@
                 tab.classList.remove('active');
             });
             
-            // Show selected tab
+            // Show selected tab and update if it's leaderboard
             if (tabName === 'leaderboard') {
                 document.getElementById('leaderboard-tab').classList.add('active');
+                updateLeaderboard();
             }
         }
 
