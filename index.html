@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Asteroid Blaster</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
         
         body {
             margin: 0;
-            padding: 0;
+            padding: 0 10px;
             font-family: 'Orbitron', sans-serif;
             background: linear-gradient(135deg, #0a0a2e 0%, #1a1a3e 100%);
             color: #fff;
@@ -19,23 +19,24 @@
             align-items: flex-start;
             position: relative;
             overflow-y: auto;
-            padding: 20px;
+            box-sizing: border-box;
         }
 
         .container {
             text-align: center;
             position: relative;
             width: 900px;
-            max-width: 95%;
-            padding: 30px;
+            max-width: 100%;
+            padding: 20px 15px;
             background: rgba(10, 10, 46, 0.8);
             border-radius: 20px;
             box-shadow: 0 0 40px rgba(62, 118, 244, 0.2);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(62, 118, 244, 0.2);
-            margin: 20px auto;
+            margin: 10px auto;
             max-height: 90vh;
             overflow-y: auto;
+            box-sizing: border-box;
         }
 
         /* Custom scrollbar styling */
@@ -85,7 +86,7 @@
 
         .menu-content {
             margin: 20px 0;
-            padding: 20px;
+            padding: 20px 15px;
             background: rgba(0, 0, 0, 0.4);
             border-radius: 15px;
             border: 1px solid rgba(62, 118, 244, 0.3);
@@ -115,15 +116,17 @@
 
         input[type="text"] {
             padding: 15px 20px;
-            font-size: 18px;
+            font-size: 16px;
             font-family: 'Orbitron', sans-serif;
             background: rgba(0, 0, 0, 0.6);
             border: 2px solid rgba(62, 118, 244, 0.5);
             border-radius: 10px;
             color: #fff;
-            width: 250px;
-            margin: 10px;
+            width: 80%;
+            max-width: 250px;
+            margin: 10px auto;
             transition: all 0.3s ease;
+            box-sizing: border-box;
         }
 
         input[type="text"]:focus {
@@ -133,8 +136,8 @@
         }
 
         .btn {
-            padding: 15px 30px;
-            font-size: 18px;
+            padding: 15px 25px;
+            font-size: 16px;
             font-family: 'Orbitron', sans-serif;
             background: linear-gradient(45deg, #3e76f4, #5b24ea);
             color: white;
@@ -148,6 +151,8 @@
             position: relative;
             overflow: hidden;
             box-shadow: 0 0 15px rgba(62, 118, 244, 0.3);
+            width: 80%;
+            max-width: 250px;
         }
 
         .btn:hover {
@@ -242,13 +247,15 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 20px;
+            padding: 15px;
             background: rgba(62, 118, 244, 0.1);
             margin: 15px 0;
             border-radius: 10px;
             font-size: 18px;
             transition: all 0.3s ease;
             border: 1px solid rgba(62, 118, 244, 0.2);
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
         .leaderboard-entry:hover {
@@ -270,12 +277,16 @@
             display: flex;
             align-items: center;
             gap: 20px;
+            width: 100%;
+            justify-content: center;
         }
 
         .score-right {
             display: flex;
             align-items: center;
             gap: 25px;
+            width: 100%;
+            justify-content: center;
         }
 
         .rank {
@@ -342,6 +353,8 @@
             margin: 15px auto;
             border-radius: 10px;
             box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+            max-width: 100%;
+            height: auto;
         }
 
         .level-display {
@@ -372,6 +385,9 @@
             display: none;
             max-height: 90vh;
             overflow-y: auto;
+            width: 100%;
+            max-width: 100%;
+            overflow-x: hidden;
         }
 
         #menu-screen {
@@ -380,6 +396,77 @@
 
         .screen {
             width: 100%;
+        }
+
+        @media (min-width: 768px) {
+            body {
+                padding: 20px;
+            }
+
+            .container {
+                padding: 30px;
+            }
+
+            h1 {
+                font-size: 48px;
+            }
+
+            .btn {
+                width: auto;
+                font-size: 18px;
+                padding: 15px 30px;
+            }
+
+            input[type="text"] {
+                width: 250px;
+                font-size: 18px;
+            }
+
+            .leaderboard-entry {
+                padding: 20px;
+                flex-wrap: nowrap;
+            }
+
+            .score-left, .score-right {
+                width: auto;
+                justify-content: space-between;
+            }
+
+            .score-left {
+                gap: 20px;
+            }
+
+            .score-right {
+                gap: 25px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 32px;
+                margin-bottom: 20px;
+                letter-spacing: 2px;
+            }
+
+            .instructions h2 {
+                font-size: 24px;
+            }
+
+            .instructions p, .instructions li {
+                font-size: 14px;
+            }
+
+            .rank {
+                font-size: 24px;
+            }
+
+            .player-name, .score-value, .level-value {
+                font-size: 14px;
+            }
+
+            .date-value {
+                font-size: 12px;
+            }
         }
     </style>
 </head>
