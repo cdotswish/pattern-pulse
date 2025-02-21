@@ -12,17 +12,24 @@
             font-family: Arial, sans-serif;
             overflow: hidden;
             color: white;
+        }
+
+        .game-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
+            z-index: 1;
         }
 
         canvas {
-            position: absolute;
+            background: transparent;
             border: 2px solid #333;
             box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
-            z-index: 1;
         }
 
         .space-background {
@@ -33,6 +40,7 @@
             height: 100%;
             z-index: -1;
             background: url('https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?w=1200') center/cover no-repeat;
+            opacity: 0.6;
         }
 
         .stars {
@@ -294,30 +302,31 @@
 <body>
     <div class="space-background"></div>
     <div class="stars" id="starsContainer"></div>
-    <div id="ui">
-        <div id="score">Score: 0</div>
-        <div id="level">Level: 1</div>
-    </div>
-    
-    <div class="menu" id="mainMenu">
-        <h1>Pattern Pulse</h1>
-        <input type="text" id="playerName" placeholder="Enter your name" maxlength="20" required>
-        <div class="error-message" id="nameError">Please enter your name to play!</div>
-        <div class="high-score" id="highScore">High Score: 0</div>
-        <div class="menu-options">
-            <button class="btn" id="playBtn">Play Game</button>
-            <button class="btn" id="howToPlayBtn">How to Play</button>
-            <button class="btn" id="leaderboardBtn">Leaderboard</button>
+    <div class="game-container">
+        <canvas id="gameCanvas"></canvas>
+        <div id="ui">
+            <div id="score">Score: 0</div>
+            <div id="level">Level: 1</div>
         </div>
-        <div class="instructions" id="instructions" style="display: none;">
-            Click the falling asteroids before they reach the bottom.<br>
-            Build combos for higher scores!<br>
-            The game speeds up as you progress.<br>
-            <button class="btn" id="backBtn" style="margin-top: 20px;">Back to Menu</button>
+        
+        <div class="menu" id="mainMenu">
+            <h1>Pattern Pulse</h1>
+            <input type="text" id="playerName" placeholder="Enter your name" maxlength="20" required>
+            <div class="error-message" id="nameError">Please enter your name to play!</div>
+            <div class="high-score" id="highScore">High Score: 0</div>
+            <div class="menu-options">
+                <button class="btn" id="playBtn">Play Game</button>
+                <button class="btn" id="howToPlayBtn">How to Play</button>
+                <button class="btn" id="leaderboardBtn">Leaderboard</button>
+            </div>
+            <div class="instructions" id="instructions" style="display: none;">
+                Click the falling asteroids before they reach the bottom.<br>
+                Build combos for higher scores!<br>
+                The game speeds up as you progress.<br>
+                <button class="btn" id="backBtn" style="margin-top: 20px;">Back to Menu</button>
+            </div>
         </div>
     </div>
-
-    <canvas id="gameCanvas"></canvas>
 
     <div class="leaderboard" id="leaderboard">
         <h2>Global Leaderboard</h2>
