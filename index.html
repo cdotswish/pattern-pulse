@@ -594,13 +594,137 @@
                 .catch((error) => {
                     console.error("Database write failed:", error);
                 });
+                
+                loadHighScores(); // Load scores once connected
             } else {
                 console.error("Not connected to Firebase");
             }
         });
 
-        // Start loading scores immediately
-        loadHighScores();
+        let highScores = [];
+
+        function loadHighScores() {
+            if (!database) {
+                console.error("Database not initialized");
+                return;
+            }
+            
+            console.log("Loading high scores...");
+            const scoresRef = database.ref('highScores');
+            
+            // Remove any existing listeners to prevent duplicates
+            scoresRef.off();
+            
+            // Listen for changes in the scores
+            scoresRef.on('value', (snapshot) => {
+                console.log("Received scores update");
+                const scores = [];
+                
+                // Convert the snapshot to array and sort by score
+                snapshot.forEach((childSnapshot) => {
+                    const score = childSnapshot.val();
+                    if (score && score.score) {
+                        scores.push(score);
+                    }
+                });
+                
+                // Sort by score (highest first)
+                scores.sort((a, b) => b.score - a.score);
+                
+                // Keep only top 10
+                highScores = scores.slice(0, 10);
+                
+                console.log("Updated high scores:", highScores);
+                
+                // Update display if leaderboard is visible
+                updateLeaderboard();
+            }, (error) => {
+                console.error("Error loading scores:", error);
+            });
+        }
+
+        function saveScore(name, score, level) {
+            if (!database) {
+                console.error("Database not initialized");
+                return;
+            }
+            
+            console.log("Saving score...", { name, score, level });
+            
+            // Sanitize inputs
+            const playerName = (name || 'Anonymous').trim().substring(0, 15);
+            const playerScore = parseInt(score) || 0;
+            const playerLevel = parseInt(level) || 1;
+            
+            const scoreData = {
+                name: playerName,
+                score: playerScore,
+                level: playerLevel,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            };
+
+            // Get a reference to the highScores node
+            const scoresRef = database.ref('highScores');
+            
+            // Push the new score
+            scoresRef.push(scoreData)
+                .then(() => {
+                    console.log('Score saved successfully:', scoreData);
+                })
+                .catch((error) => {
+                    console.error('Error saving score:', error);
+                });
+        }
+
+        function updateLeaderboard() {
+            const leaderboardList = document.getElementById('leaderboard-list');
+            if (!leaderboardList) {
+                console.error("Leaderboard element not found");
+                return;
+            }
+            
+            console.log("Updating leaderboard display");
+            leaderboardList.innerHTML = '';
+            
+            if (!highScores || highScores.length === 0) {
+                leaderboardList.innerHTML = '<div class="leaderboard-entry">No scores yet!</div>';
+                return;
+            }
+            
+            highScores.forEach((entry, index) => {
+                if (!entry || !entry.name || typeof entry.score !== 'number') {
+                    console.warn("Invalid score entry:", entry);
+                    return;
+                }
+                
+                const scoreEntry = document.createElement('div');
+                scoreEntry.className = 'leaderboard-entry';
+                
+                // Format the date
+                const date = new Date(entry.timestamp || Date.now());
+                const dateStr = date.toLocaleDateString();
+                
+                // Sanitize the display values
+                const displayName = entry.name.substring(0, 15) || 'Anonymous';
+                const displayScore = parseInt(entry.score) || 0;
+                const displayLevel = parseInt(entry.level) || 1;
+                
+                scoreEntry.innerHTML = `
+                    <div class="score-left">
+                        <span class="rank">#${index + 1}</span>
+                        <span class="player-name">${displayName}</span>
+                    </div>
+                    <div class="score-right">
+                        <span class="score-value">Score: ${displayScore.toLocaleString()}</span>
+                        <span class="level-value">Level ${displayLevel}</span>
+                        <span class="date-value">${dateStr}</span>
+                    </div>
+                `;
+                leaderboardList.appendChild(scoreEntry);
+            });
+            
+            console.log("Leaderboard updated with", highScores.length, "scores");
+        }
 
         const canvas = document.getElementById("game-canvas");
         const ctx = canvas.getContext("2d");
@@ -620,7 +744,6 @@
         let gameActive = true;
         let spawnEnabled = true;
         let currentPlayer = '';
-        let highScores = [];
         let animationFrameId;
 
         // Initialize audio context
@@ -661,100 +784,6 @@
             // Play the sound
             noise.start();
             noise.stop(audioContext.currentTime + 0.2);
-        }
-
-        function saveScore(name, score, level) {
-            if (!database) return;  // Check if Firebase is initialized
-            
-            // Sanitize inputs
-            const playerName = (name || 'Anonymous').trim().substring(0, 15);
-            const playerScore = parseInt(score) || 0;
-            const playerLevel = parseInt(level) || 1;
-            
-            const scoreData = {
-                name: playerName,
-                score: playerScore,
-                level: playerLevel,
-                timestamp: firebase.database.ServerValue.TIMESTAMP
-            };
-
-            // Get a reference to the highScores node
-            const scoresRef = database.ref('highScores');
-            
-            // Push the new score
-            scoresRef.push(scoreData)
-                .then(() => {
-                    console.log('Score saved successfully');
-                    loadHighScores(); // Reload scores after saving
-                })
-                .catch((error) => {
-                    console.error('Error saving score:', error);
-                });
-        }
-
-        function loadHighScores() {
-            if (!database) return;  // Check if Firebase is initialized
-            
-            const scoresRef = database.ref('highScores');
-            
-            // Order by score in descending order and limit to top 10
-            scoresRef.orderByChild('score')
-                    .limitToLast(10)
-                    .on('value', (snapshot) => {
-                        const scores = [];
-                        snapshot.forEach((childSnapshot) => {
-                            scores.push(childSnapshot.val());
-                        });
-                        
-                        // Sort scores in descending order
-                        highScores = scores.sort((a, b) => b.score - a.score);
-                        
-                        // Update the display if leaderboard is visible
-                        if (document.getElementById('leaderboard-tab').classList.contains('active')) {
-                            updateLeaderboard();
-                        }
-                    });
-        }
-
-        function updateLeaderboard() {
-            const leaderboardList = document.getElementById('leaderboard-list');
-            if (!leaderboardList) return;
-            
-            leaderboardList.innerHTML = '';
-            
-            if (!highScores || highScores.length === 0) {
-                leaderboardList.innerHTML = '<div class="leaderboard-entry">No scores yet!</div>';
-                return;
-            }
-            
-            highScores.forEach((entry, index) => {
-                if (!entry || !entry.name || !entry.score) return; // Skip invalid entries
-                
-                const scoreEntry = document.createElement('div');
-                scoreEntry.className = 'leaderboard-entry';
-                
-                // Format the date
-                const date = new Date(entry.timestamp || Date.now());
-                const dateStr = date.toLocaleDateString();
-                
-                // Sanitize the display values
-                const displayName = entry.name.substring(0, 15) || 'Anonymous';
-                const displayScore = parseInt(entry.score) || 0;
-                const displayLevel = parseInt(entry.level) || 1;
-                
-                scoreEntry.innerHTML = `
-                    <div class="score-left">
-                        <span class="rank">#${index + 1}</span>
-                        <span class="player-name">${displayName}</span>
-                    </div>
-                    <div class="score-right">
-                        <span class="score-value">Score: ${displayScore}</span>
-                        <span class="level-value">Level ${displayLevel}</span>
-                        <span class="date-value">${dateStr}</span>
-                    </div>
-                `;
-                leaderboardList.appendChild(scoreEntry);
-            });
         }
 
         function toggleLeaderboard() {
