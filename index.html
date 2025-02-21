@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pattern Pulse</title>
+    <style>
+        body {
+            margin: 0;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+            color: white;
+        }
+        canvas {
+            border: 2px solid #333;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+            display: none;
+        }
+        #ui {
+            position: absolute;
+            top: 20px;
+            color: #fff;
+            font-size: 24px;
+            text-align: center;
+            width: 100%;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            display: none;
+        }
+        .menu {
+            text-align: center;
+            position: absolute;
+            width: 100%;
+            max-width: 600px;
+            padding: 20px;
+        }
+        .menu h1 {
+            font-size: 48px;
+            color: #ff3366;
+            text-shadow: 0 0 20px rgba(255, 51, 102, 0.5);
+            margin-bottom: 40px;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .btn {
+            padding: 15px 30px;
+            font-size: 20px;
+            background: #ff3366;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+            box-shadow: 0 0 15px rgba(255, 51, 102, 0.5);
+            margin: 10px;
+            width: 200px;
+        }
+        .btn:hover {
+            transform: scale(1.1);
+            background: #ff4477;
+        }
+        .menu-options {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+        .high-score {
+            font-size: 24px;
+            color: #ffcc00;
+            margin: 20px 0;
+            text-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
+        }
+        .instructions {
+            font-size: 18px;
+            color: #aaa;
+            margin: 20px 0;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <div id="score">Score: 0</div>
+        <div id="level">Level: 1</div>
+    </div>
+    
+    <div class="menu" id="mainMenu">
+        <h1>Pattern Pulse</h1>
+        <div class="high-score" id="highScore">High Score: 0</div>
+        <div class="menu-options">
+            <button class="btn" id="playBtn">Play Game</button>
+            <button class="btn" id="howToPlayBtn">How to Play</button>
+        </div>
+        <div class="instructions" id="instructions" style="display: none;">
+            Click the falling tiles before they reach the bottom.<br>
+            Build combos for higher scores!<br>
+            The game speeds up as you progress.<br>
+            <button class="btn" id="backBtn" style="margin-top: 20px;">Back to Menu</button>
+        </div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const ui = document.getElementById('ui');
+        const mainMenu = document.getElementById('mainMenu');
+        const playBtn = document.getElementById('playBtn');
+        const howToPlayBtn = document.getElementById('howToPlayBtn');
+        const backBtn = document.getElementById('backBtn');
+        const instructions = document.getElementById('instructions');
+        const scoreDisplay = document.getElementById('score');
+        const levelDisplay = document.getElementById('level');
+        const highScoreDisplay = document.getElementById('highScore');
+
+        // Set canvas size
+        canvas.width = 600;
+        canvas.height = 800;
+
+        // Game variables
+        let gameStarted = false;
+        let score = 0;
+        let highScore = localStorage.getItem('highScore') || 0;
+        let level = 1;
+        let tiles = [];
+        let baseSpeed = 2;
+        let spawnInterval = 1000;
+        let lastSpawnTime = 0;
+        let combo = 0;
+
+        // Update high score display
+        highScoreDisplay.textContent = `High Score: ${highScore}`;
+
+        // Colors for tiles
+        const colors = ['#ff3366', '#33ff66', '#3366ff', '#ffff33'];
+
+        // Audio context
+        let audioCtx;
+        let oscillator;
+
+        // Menu controls
+        playBtn.addEventListener('click', () => {
+            mainMenu.style.display = 'none';
+            canvas.style.display = 'block';
+            ui.style.display = 'block';
+            startGame();
+        });
+
+        howToPlayBtn.addEventListener('click', () => {
+            document.querySelector('.menu-options').style.display = 'none';
+            instructions.style.display = 'block';
+        });
+
+        backBtn.addEventListener('click', () => {
+            document.querySelector('.menu-options').style.display = 'flex';
+            instructions.style.display = 'none';
+        });
+
+        // Initialize audio
+        function initAudio() {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            
+            const gainNode = audioCtx.createGain();
+            gainNode.gain.value = 0.1;
+            gainNode.connect(audioCtx.destination);
+
+            oscillator = audioCtx.createOscillator();
+            oscillator.type = 'sine';
+            oscillator.frequency.value = 440;
+            oscillator.connect(gainNode);
+        }
+
+        // Play beat sound
+        function playBeat() {
+            if (!audioCtx) return;
+            
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            gain.gain.value = 0.1;
+            osc.frequency.value = 440;
+            
+            osc.start();
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            osc.stop(audioCtx.currentTime + 0.1);
+        }
+
+        class Tile {
+            constructor() {
+                this.width = 80;
+                this.height = 80;
+                this.x = Math.random() * (canvas.width - this.width);
+                this.y = -this.height;
+                this.color = colors[Math.floor(Math.random() * colors.length)];
+                this.speed = baseSpeed;
+                this.active = true;
+                this.pulseScale = 1;
+                this.clicked = false;
+            }
+
+            update() {
+                if (!this.clicked) {
+                    this.y += this.speed;
+                    this.pulseScale = 1 + Math.sin(Date.now() / 200) * 0.1;
+                } else {
+                    this.pulseScale *= 0.9;
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x + this.width/2, this.y + this.height/2);
+                ctx.scale(this.pulseScale, this.pulseScale);
+                ctx.fillStyle = this.color;
+                ctx.fillRect(-this.width/2, -this.height/2, this.width, this.height);
+                ctx.restore();
+
+                if (this.clicked) {
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                    ctx.fillRect(this.x, this.y, this.width, this.height);
+                }
+            }
+
+            isClicked(x, y) {
+                return x >= this.x && x <= this.x + this.width &&
+                       y >= this.y && y <= this.y + this.height;
+            }
+        }
+
+        function startGame() {
+            if (!audioCtx) initAudio();
+            gameStarted = true;
+            score = 0;
+            level = 1;
+            tiles = [];
+            baseSpeed = 2;
+            spawnInterval = 1000;
+            combo = 0;
+            animate();
+        }
+
+        function updateGame() {
+            const currentTime = Date.now();
+
+            // Spawn new tiles
+            if (currentTime - lastSpawnTime > spawnInterval) {
+                tiles.push(new Tile());
+                lastSpawnTime = currentTime;
+            }
+
+            // Update tiles
+            tiles.forEach(tile => tile.update());
+
+            // Remove tiles that are off screen or clicked
+            tiles = tiles.filter(tile => tile.y < canvas.height && (!tile.clicked || tile.pulseScale > 0.1));
+
+            // Check for game over
+            if (tiles.some(tile => tile.y > canvas.height - tile.height && !tile.clicked)) {
+                gameOver();
+            }
+        }
+
+        function drawGame() {
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw tiles
+            tiles.forEach(tile => tile.draw());
+        }
+
+        function animate() {
+            if (!gameStarted) return;
+            
+            updateGame();
+            drawGame();
+            requestAnimationFrame(animate);
+        }
+
+        function handleClick(e) {
+            if (!gameStarted) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            // Check for tile clicks
+            tiles.forEach(tile => {
+                if (!tile.clicked && tile.isClicked(x, y)) {
+                    tile.clicked = true;
+                    score += 10 * (combo + 1);
+                    combo++;
+                    scoreDisplay.textContent = `Score: ${score}`;
+
+                    // Level up every 500 points
+                    const newLevel = Math.floor(score / 500) + 1;
+                    if (newLevel > level) {
+                        level = newLevel;
+                        baseSpeed += 0.5;
+                        spawnInterval = Math.max(300, spawnInterval - 100);
+                        levelDisplay.textContent = `Level: ${level}`;
+                    }
+                }
+            });
+        }
+
+        function gameOver() {
+            gameStarted = false;
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('highScore', highScore);
+                highScoreDisplay.textContent = `High Score: ${highScore}`;
+            }
+            canvas.style.display = 'none';
+            ui.style.display = 'none';
+            mainMenu.style.display = 'block';
+        }
+
+        // Event listeners
+        canvas.addEventListener('click', handleClick);
+    </script>
+</body>
+</html>
