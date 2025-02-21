@@ -608,6 +608,38 @@
         #leaderboardList li:last-child {
             border-bottom: none;
         }
+        
+        #howToPlay, #leaderboard {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            color: white;
+        }
+
+        .back-btn {
+            background: #4CAF50;
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        .back-btn:hover {
+            background: #45a049;
+        }
     </style>
 </head>
 <body>
@@ -640,6 +672,18 @@
                 <h2>Top Scores</h2>
                 <ul id="leaderboardList"></ul>
             </div>
+        </div>
+        <div id="howToPlay">
+            <h2>How to Play</h2>
+            <p>Click the falling asteroids before they reach the bottom.</p>
+            <p>Build combos for higher scores!</p>
+            <p>The game speeds up as you progress.</p>
+            <button class="back-btn" id="howToPlayBackBtn">Back to Menu</button>
+        </div>
+        <div id="leaderboard">
+            <h2>Leaderboard</h2>
+            <ul id="leaderboardList"></ul>
+            <button class="back-btn" id="leaderboardBackBtn">Back to Menu</button>
         </div>
     </div>
 
@@ -732,20 +776,45 @@
             // Get DOM elements
             const canvas = document.getElementById('gameCanvas');
             const ctx = canvas.getContext('2d');
+            const mainMenu = document.getElementById('mainMenu');
+            const gameOverScreen = document.getElementById('gameOver');
             const playBtn = document.getElementById('playBtn');
             const howToPlayBtn = document.getElementById('howToPlayBtn');
-            const backBtn = document.getElementById('backBtn');
             const leaderboardBtn = document.getElementById('leaderboardBtn');
-            const closeLeaderboardBtn = document.getElementById('closeLeaderboard');
-            const mainMenu = document.getElementById('mainMenu');
-            const instructions = document.getElementById('instructions');
-            const leaderboard = document.getElementById('leaderboard');
-            const ui = document.getElementById('ui');
+            const backBtn = document.getElementById('backBtn');
+            const playerNameInput = document.getElementById('playerName');
             const scoreDisplay = document.getElementById('score');
             const levelDisplay = document.getElementById('level');
-            const highScoreDisplay = document.getElementById('highScore');
-            const playerNameInput = document.getElementById('playerName');
-            const nameError = document.getElementById('nameError');
+            const howToPlayScreen = document.getElementById('howToPlay');
+            const leaderboardScreen = document.getElementById('leaderboard');
+            const ui = document.getElementById('ui');
+
+            // Button click handlers
+            howToPlayBtn.addEventListener('click', function() {
+                mainMenu.style.display = 'none';
+                howToPlayScreen.style.display = 'block';
+            });
+
+            leaderboardBtn.addEventListener('click', function() {
+                mainMenu.style.display = 'none';
+                leaderboardScreen.style.display = 'block';
+                updateLeaderboard(); // Refresh leaderboard when viewing
+            });
+
+            backBtn.addEventListener('click', function() {
+                howToPlayScreen.style.display = 'none';
+                leaderboardScreen.style.display = 'none';
+                mainMenu.style.display = 'block';
+            });
+
+            // Add back buttons for both screens
+            document.querySelectorAll('.back-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    howToPlayScreen.style.display = 'none';
+                    leaderboardScreen.style.display = 'none';
+                    mainMenu.style.display = 'block';
+                });
+            });
 
             // Game constants
             const INITIAL_SPEED = 1.0;
