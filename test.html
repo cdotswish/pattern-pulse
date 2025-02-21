@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pattern Pulse Test</title>
+</head>
+<body>
+    <h1>Pattern Pulse Test</h1>
+    <button onclick="testFirebase()">Test Firebase</button>
+    <button onclick="testCanvas()">Test Canvas</button>
+    <div id="result"></div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script>
+        function testFirebase() {
+            const firebaseConfig = {
+                apiKey: "AIzaSyA_JDJHGFJnPh7UXhNE-U5sPJfzwH2Jz_8",
+                authDomain: "pattern-pulse-game.firebaseapp.com",
+                databaseURL: "https://pattern-pulse-game-default-rtdb.firebaseio.com",
+                projectId: "pattern-pulse-game",
+                storageBucket: "pattern-pulse-game.appspot.com",
+                messagingSenderId: "848383588708",
+                appId: "1:848383588708:web:3b9d3e9d9d3e9d9d3e9d9d"
+            };
+
+            try {
+                firebase.initializeApp(firebaseConfig);
+                const database = firebase.database();
+                document.getElementById('result').textContent = 'Firebase initialized successfully';
+            } catch (error) {
+                document.getElementById('result').textContent = 'Firebase error: ' + error.message;
+            }
+        }
+
+        function testCanvas() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 300;
+            canvas.height = 300;
+            document.body.appendChild(canvas);
+            const ctx = canvas.getContext('2d');
+            
+            try {
+                ctx.fillStyle = 'blue';
+                ctx.fillRect(0, 0, 100, 100);
+                document.getElementById('result').textContent = 'Canvas working';
+            } catch (error) {
+                document.getElementById('result').textContent = 'Canvas error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

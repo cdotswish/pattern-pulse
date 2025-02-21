@@ -1,628 +1,59 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
     <title>Pattern Pulse</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body {
             margin: 0;
             padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
             background: #000;
             font-family: Arial, sans-serif;
             overflow: hidden;
-            color: white;
         }
 
-        .game-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1;
-            touch-action: none;
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            -khtml-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-            overflow: hidden;
-        }
-
-        canvas {
-            width: 100%;
-            height: 100%;
-            background: transparent;
-            border: none;
-            box-shadow: none;
-        }
-
-        .space-background {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            background: url('https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?w=1200') center/cover no-repeat;
-            opacity: 0.6;
-        }
-
-        .stars {
-            position: fixed;
-            width: 100%;
-            height: 100%;
-            background: transparent;
-            z-index: -1;
-        }
-
-        @keyframes twinkle {
-            0% { opacity: 0.3; }
-            50% { opacity: 1; }
-            100% { opacity: 0.3; }
-        }
-
-        .star {
-            position: absolute;
-            background: white;
-            border-radius: 50%;
-            animation: twinkle 2s infinite;
-        }
-
-        #ui {
-            position: absolute;
-            top: 20px;
-            color: #fff;
-            font-size: 24px;
-            text-align: center;
-            width: 100%;
-            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        #gameCanvas {
             display: none;
-            pointer-events: none;
-        }
-
-        .menu {
-            text-align: center;
             position: absolute;
-            width: 100%;
-            max-width: 600px;
-            padding: 20px;
-        }
-
-        .menu h1 {
-            font-size: 48px;
-            color: #ff3366;
-            text-shadow: 0 0 20px rgba(255, 51, 102, 0.5);
-            margin-bottom: 40px;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-
-        .btn {
-            padding: 15px 30px;
-            font-size: 20px;
-            background: #ff3366;
-            color: white;
-            border: none;
-            border-radius: 25px;
-            cursor: pointer;
-            transition: transform 0.2s, background 0.2s;
-            box-shadow: 0 0 15px rgba(255, 51, 102, 0.5);
-            margin: 10px;
-            width: 200px;
-        }
-
-        .btn:hover {
-            transform: scale(1.1);
-            background: #ff4477;
-        }
-
-        .menu-options {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .high-score {
-            font-size: 24px;
-            color: #ffcc00;
-            margin: 20px 0;
-            text-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
-        }
-
-        .instructions {
-            font-size: 18px;
-            color: #aaa;
-            margin: 20px 0;
-            line-height: 1.5;
-        }
-
-        .leaderboard {
-            position: fixed;
-            left: 50%;
             top: 50%;
+            left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.95);
-            padding: 30px;
-            border-radius: 15px;
-            border: 3px solid #ff3366;
-            display: none;
-            min-width: 300px;
-            text-align: center;
-            z-index: 1000;
         }
 
-        .leaderboard h2 {
-            color: #ff3366;
-            margin: 0 0 20px 0;
-            font-size: 28px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        .leaderboard-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .leaderboard-item {
-            color: white;
-            padding: 10px 0;
-            font-size: 18px;
-            border-bottom: 1px solid rgba(255, 51, 102, 0.3);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .leaderboard-item:last-child {
-            border-bottom: none;
-        }
-
-        .leaderboard-item .rank {
-            color: #ffcc00;
-            font-weight: bold;
-            margin-right: 10px;
-        }
-
-        .leaderboard-item .score {
-            color: #ff3366;
-            font-weight: bold;
-        }
-
-        .close-btn {
+        .ui {
             position: absolute;
             top: 10px;
-            right: 10px;
-            background: none;
-            border: none;
-            color: #ff3366;
-            font-size: 24px;
-            cursor: pointer;
-            padding: 0;
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-        }
-
-        .close-btn:hover {
-            color: #ff1a4d;
-            transform: scale(1.1);
-        }
-
-        .error-message {
-            color: #ff3366;
-            font-size: 14px;
-            margin-top: 5px;
-            visibility: hidden;
-        }
-
-        #playerName {
-            padding: 12px;
-            border: 2px solid #ff3366;
-            border-radius: 5px;
-            background: rgba(0, 0, 0, 0.7);
+            left: 10px;
             color: white;
-            font-size: 16px;
-            width: 200px;
-            margin-bottom: 10px;
+            font-size: 20px;
+            z-index: 1;
+            display: none;
+        }
+
+        #mainMenu {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             text-align: center;
-        }
-
-        #playerName::placeholder {
-            color: rgba(255, 255, 255, 0.5);
-        }
-
-        #playerName:focus {
-            outline: none;
-            border-color: #ffcc00;
-        }
-
-        .audio-controls {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 10px;
-            border-radius: 25px;
-            border: 2px solid #ff3366;
-            z-index: 1000;
-        }
-
-        .audio-controls button {
-            background: none;
-            border: none;
-            color: #ff3366;
-            cursor: pointer;
-            font-size: 24px;
-            padding: 5px;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .audio-controls button:hover {
-            color: #ffcc00;
-            transform: scale(1.1);
-        }
-
-        .volume-slider {
-            width: 100px;
-            -webkit-appearance: none;
-            background: rgba(255, 51, 102, 0.3);
-            height: 5px;
-            border-radius: 5px;
-            outline: none;
-        }
-
-        .volume-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 15px;
-            height: 15px;
-            background: #ff3366;
-            border-radius: 50%;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .volume-slider::-webkit-slider-thumb:hover {
-            background: #ffcc00;
-            transform: scale(1.2);
-        }
-
-        @media (max-width: 768px) {
-            .menu {
-                width: 90%;
-                max-width: 400px;
-                padding: 15px;
-            }
-
-            .btn {
-                font-size: 16px;
-                padding: 12px 20px;
-                margin: 8px 0;
-                width: 100%;
-            }
-
-            #playerName {
-                font-size: 16px;
-                padding: 10px;
-                width: 90%;
-            }
-
-            #ui {
-                font-size: 16px;
-                padding: 10px;
-            }
-
-            .leaderboard {
-                width: 90%;
-                max-width: 400px;
-                font-size: 14px;
-            }
-        }
-
-        @media (min-width: 769px) {
-            .menu {
-                width: 400px;
-                padding: 20px;
-            }
-
-            .btn {
-                font-size: 18px;
-                padding: 15px 30px;
-                margin: 10px 0;
-            }
-
-            #playerName {
-                font-size: 18px;
-                padding: 12px;
-                width: 80%;
-            }
-
-            #ui {
-                font-size: 18px;
-                padding: 15px;
-            }
-
-            .leaderboard {
-                width: 500px;
-                font-size: 16px;
-            }
-        }
-
-        .achievements {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 15px;
-            border-radius: 10px;
             color: white;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
             z-index: 100;
-            display: none;
         }
 
-        .achievement-popup {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(255, 215, 0, 0.9);
-            color: black;
-            padding: 20px;
-            border-radius: 15px;
-            text-align: center;
-            z-index: 1000;
-            animation: popIn 0.5s ease-out;
-            display: none;
-        }
-
-        .power-up {
-            position: absolute;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: radial-gradient(circle, #ff0, #f90);
-            animation: pulse 1s infinite;
-            cursor: pointer;
-        }
-
-        .streak-counter {
-            position: fixed;
-            left: 20px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 24px;
-            color: white;
-            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-            transition: all 0.3s ease;
-        }
-
-        .combo-multiplier {
-            position: fixed;
-            right: 20px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 24px;
-            color: white;
-            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-            transition: all 0.3s ease;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.2); }
-            100% { transform: scale(1); }
-        }
-
-        @keyframes popIn {
-            0% { transform: translate(-50%, -50%) scale(0); }
-            70% { transform: translate(-50%, -50%) scale(1.1); }
-            100% { transform: translate(-50%, -50%) scale(1); }
-        }
-
-        .daily-challenges {
-            position: fixed;
-            right: 20px;
-            top: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 15px;
-            border-radius: 10px;
-            color: white;
-            max-width: 300px;
-            display: none;
-        }
-
-        .challenge-list {
-            margin-top: 10px;
-        }
-
-        .challenge-item {
-            margin: 10px 0;
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 5px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .challenge-progress {
-            height: 5px;
-            background: #333;
-            border-radius: 3px;
-            margin-top: 5px;
-            overflow: hidden;
-        }
-
-        .progress-bar {
-            height: 100%;
-            background: #4CAF50;
-            width: 0%;
-            transition: width 0.3s ease;
-        }
-
-        .stats {
-            position: fixed;
-            left: 20px;
-            top: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 15px;
-            border-radius: 10px;
-            color: white;
-            display: none;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            margin-top: 10px;
-        }
-
-        .stat-item {
-            text-align: center;
-        }
-
-        .stat-label {
-            display: block;
-            font-size: 14px;
-            color: #aaa;
-        }
-
-        .stat-value {
-            display: block;
-            font-size: 24px;
-            font-weight: bold;
-            margin-top: 5px;
-        }
-
-        @media (max-width: 768px) {
-            .daily-challenges, .stats {
-                position: static;
-                margin: 10px auto;
-                max-width: 90%;
-            }
-        }
-
-        .daily-challenge {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 15px;
-            border-radius: 10px;
-            color: white;
-        }
-
-        .stats {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 15px;
-            border-radius: 10px;
-            color: white;
-        }
-
-        @keyframes scorePopup {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.2); }
-            100% { transform: scale(1); }
-        }
-
-        @keyframes comboFlash {
-            0% { color: white; text-shadow: 0 0 10px rgba(255, 255, 255, 0.5); }
-            50% { color: #FFD700; text-shadow: 0 0 20px rgba(255, 215, 0, 0.8); }
-            100% { color: white; text-shadow: 0 0 10px rgba(255, 255, 255, 0.5); }
-        }
-
-        @keyframes levelUp {
-            0% { transform: scale(1); color: white; }
-            25% { transform: scale(1.3); color: #FF4444; }
-            50% { transform: scale(1.2); color: #FFD700; }
-            100% { transform: scale(1); color: white; }
-        }
-
-        .score-popup {
-            animation: scorePopup 0.3s ease-out;
-        }
-
-        .combo-flash {
-            animation: comboFlash 0.5s ease-out;
-        }
-
-        .level-up {
-            animation: levelUp 1s ease-out;
-        }
-        
-        .leaderboard {
-            margin-top: 20px;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 15px;
-            border-radius: 10px;
-            max-width: 300px;
-            margin: 20px auto;
-        }
-        
-        .leaderboard h2 {
+        h1 {
             color: #FFD700;
-            margin-bottom: 10px;
-        }
-        
-        #leaderboardList {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-        
-        #leaderboardList li {
-            color: white;
-            padding: 5px;
-            margin: 2px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        #leaderboardList li:last-child {
-            border-bottom: none;
-        }
-        
-        #howToPlay, #leaderboard {
-            display: none;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.8);
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-            color: white;
+            font-size: 36px;
+            margin-bottom: 20px;
         }
 
-        .back-btn {
+        button {
             background: #4CAF50;
             border: none;
             color: white;
@@ -635,10 +66,60 @@
             cursor: pointer;
             border-radius: 4px;
             transition: background-color 0.3s;
+            width: 200px;
         }
 
-        .back-btn:hover {
+        button:hover {
             background: #45a049;
+        }
+
+        #playerName {
+            padding: 10px;
+            font-size: 16px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            border: none;
+            width: 200px;
+        }
+
+        #howToPlay, #leaderboard {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            color: white;
+            z-index: 100;
+            min-width: 300px;
+        }
+
+        #leaderboardList {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0;
+        }
+
+        #leaderboardList li {
+            padding: 5px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        #gameOver {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: white;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            z-index: 100;
         }
     </style>
 </head>
@@ -686,10 +167,6 @@
             <button class="back-btn" id="leaderboardBackBtn">Back to Menu</button>
         </div>
     </div>
-
-    <audio id="bgMusic" loop preload="auto">
-        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mp3">
-    </audio>
 
     <div class="audio-controls">
         <button id="musicToggle" onclick="toggleMusic()" title="Toggle Music">🔈</button>
@@ -757,216 +234,6 @@
 
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    <script>
-        // Initialize Firebase first
-        const firebaseConfig = {
-            apiKey: "AIzaSyA_JDJHGFJnPh7UXhNE-U5sPJfzwH2Jz_8",
-            authDomain: "pattern-pulse-game.firebaseapp.com",
-            databaseURL: "https://pattern-pulse-game-default-rtdb.firebaseio.com",
-            projectId: "pattern-pulse-game",
-            storageBucket: "pattern-pulse-game.appspot.com",
-            messagingSenderId: "848383588708",
-            appId: "1:848383588708:web:3b9d3e9d9d3e9d9d3e9d9d"
-        };
-
-        let database;
-        try {
-            firebase.initializeApp(firebaseConfig);
-            database = firebase.database();
-            console.log('Firebase initialized successfully');
-        } catch (error) {
-            console.error('Firebase initialization error:', error);
-        }
-
-        // Wait for DOM to load
-        window.addEventListener('DOMContentLoaded', function() {
-            // Get DOM elements
-            const canvas = document.getElementById('gameCanvas');
-            const ctx = canvas.getContext('2d');
-            const mainMenu = document.getElementById('mainMenu');
-            const howToPlayScreen = document.getElementById('howToPlay');
-            const leaderboardScreen = document.getElementById('leaderboard');
-            const gameOverScreen = document.getElementById('gameOver');
-            const ui = document.getElementById('ui');
-            const scoreDisplay = document.getElementById('score');
-            const levelDisplay = document.getElementById('level');
-            const bgMusic = document.getElementById('bgMusic');
-            bgMusic.volume = 0.3;
-
-            // Set initial display states
-            canvas.style.display = 'none';
-            ui.style.display = 'none';
-            mainMenu.style.display = 'block';
-            howToPlayScreen.style.display = 'none';
-            leaderboardScreen.style.display = 'none';
-            gameOverScreen.style.display = 'none';
-
-            // Menu navigation
-            document.getElementById('howToPlayBtn').addEventListener('click', function() {
-                console.log('How to Play clicked');
-                mainMenu.style.display = 'none';
-                howToPlayScreen.style.display = 'block';
-            });
-
-            document.getElementById('leaderboardBtn').addEventListener('click', function() {
-                console.log('Leaderboard clicked');
-                mainMenu.style.display = 'none';
-                leaderboardScreen.style.display = 'block';
-                updateLeaderboard();
-            });
-
-            document.getElementById('playBtn').addEventListener('click', function() {
-                console.log('Play clicked');
-                const playerName = document.getElementById('playerName').value.trim();
-                if (!playerName) {
-                    document.getElementById('nameError').style.display = 'block';
-                    return;
-                }
-                document.getElementById('nameError').style.display = 'none';
-                currentPlayer = playerName;
-                startGame();
-            });
-
-            document.getElementById('restartBtn').addEventListener('click', function() {
-                console.log('Restart clicked');
-                startGame();
-            });
-
-            // Back buttons
-            document.querySelectorAll('.back-btn').forEach(function(btn) {
-                btn.addEventListener('click', function() {
-                    console.log('Back clicked');
-                    howToPlayScreen.style.display = 'none';
-                    leaderboardScreen.style.display = 'none';
-                    gameOverScreen.style.display = 'none';
-                    mainMenu.style.display = 'block';
-                });
-            });
-
-            // Game constants and state
-            const INITIAL_SPEED = 1.0;
-            const INITIAL_SPAWN_INTERVAL = 2000;
-            const LEVEL_INCREASE_SCORE = 30;
-            const SPEED_INCREASE = 0.15;
-            const SPAWN_INTERVAL_DECREASE = 100;
-            const ASTEROID_SIZE = 40;
-            const MIN_SPAWN_INTERVAL = 600;
-
-            let gameStarted = false;
-            let gameOver = false;
-            let score = 0;
-            let level = 1;
-            let baseSpeed = INITIAL_SPEED;
-            let spawnInterval = INITIAL_SPAWN_INTERVAL;
-            let tiles = [];
-            let particles = [];
-            let lastSpawnTime = 0;
-            let currentPlayer = '';
-
-            function startGame() {
-                console.log('Starting game...');
-                // Reset game state
-                gameStarted = true;
-                gameOver = false;
-                score = 0;
-                level = 1;
-                baseSpeed = INITIAL_SPEED;
-                spawnInterval = INITIAL_SPAWN_INTERVAL;
-                tiles = [];
-                particles = [];
-                lastSpawnTime = Date.now();
-                
-                // Update UI
-                mainMenu.style.display = 'none';
-                gameOverScreen.style.display = 'none';
-                canvas.style.display = 'block';
-                ui.style.display = 'block';
-                scoreDisplay.textContent = 'Score: 0';
-                levelDisplay.textContent = 'Level: 1';
-                
-                // Start music
-                bgMusic.currentTime = 0;
-                bgMusic.play().catch(console.error);
-                
-                // Start game loop
-                requestAnimationFrame(updateGame);
-            }
-
-            function showGameOver() {
-                console.log('Game over');
-                gameStarted = false;
-                gameOver = true;
-                
-                // Fade out music
-                const fadeInterval = setInterval(() => {
-                    if (bgMusic.volume > 0.02) {
-                        bgMusic.volume -= 0.02;
-                    } else {
-                        bgMusic.pause();
-                        bgMusic.volume = 0.3;
-                        clearInterval(fadeInterval);
-                    }
-                }, 100);
-                
-                // Save score to Firebase
-                database.ref('scores').push({
-                    playerName: currentPlayer,
-                    score: score,
-                    timestamp: firebase.database.ServerValue.TIMESTAMP
-                }).then(() => {
-                    console.log('Score saved');
-                    updateLeaderboard();
-                }).catch(error => {
-                    console.error('Error saving score:', error);
-                });
-                
-                // Show game over screen
-                document.getElementById('finalScore').textContent = score;
-                canvas.style.display = 'none';
-                ui.style.display = 'none';
-                gameOverScreen.style.display = 'block';
-            }
-
-            function updateLeaderboard() {
-                console.log('Updating leaderboard...');
-                database.ref('scores')
-                    .orderByChild('score')
-                    .limitToLast(10)
-                    .once('value')
-                    .then((snapshot) => {
-                        const scores = [];
-                        snapshot.forEach((childSnapshot) => {
-                            scores.push(childSnapshot.val());
-                        });
-                        scores.sort((a, b) => b.score - a.score);
-                        
-                        const list = document.getElementById('leaderboardList');
-                        list.innerHTML = '';
-                        scores.forEach((entry, index) => {
-                            const li = document.createElement('li');
-                            li.textContent = `${index + 1}. ${entry.playerName}: ${entry.score}`;
-                            list.appendChild(li);
-                        });
-                        console.log('Leaderboard updated');
-                    })
-                    .catch(error => {
-                        console.error('Error updating leaderboard:', error);
-                        const list = document.getElementById('leaderboardList');
-                        list.innerHTML = '<li>Error loading leaderboard</li>';
-                    });
-            }
-
-            // Initialize canvas size
-            function resizeCanvas() {
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
-            }
-            window.addEventListener('resize', resizeCanvas);
-            resizeCanvas();
-
-            // Initial leaderboard load
-            updateLeaderboard();
-        });
-    </script>
+    <script src="game.js"></script>
 </body>
 </html>
