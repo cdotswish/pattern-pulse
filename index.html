@@ -629,16 +629,20 @@
             let level = 1;
             let combo = 1;
             let tiles = [];
-            let baseSpeed = 2;
-            let spawnInterval = 1000;
+            let baseSpeed = 1;
+            let spawnInterval = 2000;
             let lastSpawnTime = 0;
             let currentPlayer = '';
             let highScore = 0;
 
             // Game configuration
-            const ASTEROID_SIZE = window.innerWidth < 768 ? 30 : 40; // Smaller asteroids on mobile
-            const MOBILE_MARGIN = window.innerWidth < 768 ? 40 : 60; // Margin from edges on mobile
-            
+            const ASTEROID_SIZE = window.innerWidth < 768 ? 30 : 40;
+            const MOBILE_MARGIN = window.innerWidth < 768 ? 40 : 60;
+            const INITIAL_SPEED = 1;
+            const SPEED_INCREASE = 0.2;
+            const INITIAL_SPAWN_INTERVAL = 2000;
+            const MIN_SPAWN_INTERVAL = 500;
+
             // Responsive canvas sizing
             function resizeCanvas() {
                 canvas.width = window.innerWidth;
@@ -747,14 +751,39 @@
                 level = 1;
                 combo = 1;
                 tiles = [];
-                baseSpeed = 2;
-                spawnInterval = 1000;
+                baseSpeed = INITIAL_SPEED;
+                spawnInterval = INITIAL_SPAWN_INTERVAL;
                 lastSpawnTime = Date.now();
                 
                 scoreDisplay.textContent = `Score: ${score}`;
                 levelDisplay.textContent = `Level: ${level}`;
                 
                 requestAnimationFrame(updateGame);
+            }
+
+            function gameOver() {
+                gameStarted = false;
+                
+                if (score > highScore) {
+                    highScore = score;
+                    highScoreDisplay.textContent = `High Score: ${highScore}`;
+                    
+                    // Save to Firebase
+                    database.ref('scores').push({
+                        name: currentPlayer,
+                        score: score,
+                        timestamp: Date.now()
+                    });
+                }
+                
+                // Show menu
+                mainMenu.style.display = 'block';
+                canvas.style.display = 'none';
+                ui.style.display = 'none';
+                dailyChallenge.style.display = 'none';
+                stats.style.display = 'none';
+                streakCounter.style.display = 'none';
+                comboMultiplier.style.display = 'none';
             }
 
             // Game loop
@@ -799,11 +828,10 @@
                     
                     ctx.restore();
                     
-                    // Remove if out of bounds
-                    if (tile.y > canvas.height + ASTEROID_SIZE) {
-                        tiles.splice(i, 1);
-                        combo = 1;
-                        comboMultiplier.textContent = 'x1';
+                    // Check if asteroid hits bottom
+                    if (tile.y > canvas.height - ASTEROID_SIZE/2) {
+                        gameOver();
+                        return;
                     }
                 }
                 
@@ -837,11 +865,12 @@
                         comboMultiplier.textContent = `x${combo}`;
                         streakCounter.textContent = `Streak: ${combo - 1}`;
                         
-                        if (score > level * 500) {
+                        // Level up every 200 points
+                        if (score > level * 200) {
                             level++;
                             levelDisplay.textContent = `Level: ${level}`;
-                            baseSpeed += 0.5;
-                            spawnInterval = Math.max(300, spawnInterval - 50);
+                            baseSpeed += SPEED_INCREASE;
+                            spawnInterval = Math.max(MIN_SPAWN_INTERVAL, spawnInterval - 100);
                         }
                         
                         break;
@@ -877,8 +906,8 @@
                 level = 1;
                 combo = 1;
                 tiles = [];
-                baseSpeed = 2;
-                spawnInterval = 1000;
+                baseSpeed = INITIAL_SPEED;
+                spawnInterval = INITIAL_SPAWN_INTERVAL;
                 
                 scoreDisplay.textContent = `Score: ${score}`;
                 levelDisplay.textContent = `Level: ${level}`;
