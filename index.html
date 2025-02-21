@@ -367,6 +367,93 @@
                 font-size: 16px;
             }
         }
+
+        .achievements {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            color: white;
+            z-index: 100;
+            display: none;
+        }
+
+        .achievement-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 215, 0, 0.9);
+            color: black;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            z-index: 1000;
+            animation: popIn 0.5s ease-out;
+            display: none;
+        }
+
+        .power-up {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #ff0, #f90);
+            animation: pulse 1s infinite;
+            cursor: pointer;
+        }
+
+        .streak-counter {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            font-size: 24px;
+            color: #fff;
+            text-shadow: 0 0 10px #ff0;
+        }
+
+        .combo-multiplier {
+            position: fixed;
+            top: 60px;
+            left: 20px;
+            font-size: 20px;
+            color: #ff0;
+            text-shadow: 0 0 10px #f90;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes popIn {
+            0% { transform: translate(-50%, -50%) scale(0); }
+            70% { transform: translate(-50%, -50%) scale(1.1); }
+            100% { transform: translate(-50%, -50%) scale(1); }
+        }
+
+        .daily-challenge {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            color: white;
+        }
+
+        .stats {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -413,6 +500,28 @@
     <audio id="backgroundMusic" loop>
         <source src="https://cdn.pixabay.com/download/audio/2022/11/22/audio_febc508520.mp3" type="audio/mpeg">
     </audio>
+
+    <div class="achievements" id="achievements">
+        <h3>Achievements</h3>
+        <div id="achievementsList"></div>
+    </div>
+    <div class="achievement-popup" id="achievementPopup">
+        <h2>Achievement Unlocked!</h2>
+        <p id="achievementName"></p>
+    </div>
+    <div class="streak-counter" id="streakCounter">Streak: 0</div>
+    <div class="combo-multiplier" id="comboMultiplier">x1</div>
+    <div class="daily-challenge" id="dailyChallenge">
+        <h3>Daily Challenge</h3>
+        <p id="challengeDescription"></p>
+        <p id="challengeProgress"></p>
+    </div>
+    <div class="stats" id="stats">
+        <h3>Stats</h3>
+        <p>Perfect Hits: <span id="perfectHits">0</span></p>
+        <p>Best Streak: <span id="bestStreak">0</span></p>
+        <p>Power-ups Used: <span id="powerupsUsed">0</span></p>
+    </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -710,8 +819,9 @@
             if (!gameStarted) return;
 
             const currentTime = Date.now();
-            if (currentTime - lastSpawnTime > spawnInterval) {
+            if (currentTime - lastSpawnTime > (powerUps.time_slow.active ? spawnInterval * 1.5 : spawnInterval)) {
                 spawnTile();
+                spawnPowerUp();
                 lastSpawnTime = currentTime;
             }
 
@@ -843,28 +953,34 @@
                 const tile = tiles[i];
                 const scaledSize = tile.width * gameScale;
                 
-                // Adjust hit detection for scaled tiles
                 const dx = x - tile.x;
                 const dy = y - tile.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
                 
                 if (distance < (scaledSize / 2)) {
                     tiles.splice(i, 1);
-                    score += 10 * (combo + 1);
-                    combo++;
-                    scoreDisplay.textContent = `Score: ${score}`;
                     
-                    if (score >= level * 500) {
-                        level++;
-                        baseSpeed += 0.5;
-                        spawnInterval = Math.max(300, spawnInterval - 50);
-                        levelDisplay.textContent = `Level: ${level}`;
+                    // Perfect hit detection
+                    if (distance < scaledSize / 4) {
+                        stats.perfectHits++;
+                        score += 50; // Bonus for perfect hit
                     }
-
-                    playBeat();
-                    break;
+                    
+                    const points = powerUps.double_points.active ? 20 : 10;
+                    score += points * combo;
+                    combo++;
+                    stats.currentStreak++;
+                    
+                    updateScore();
+                    updateStats();
+                    checkAchievements();
+                    return;
                 }
             }
+            // Miss
+            combo = 1;
+            stats.currentStreak = 0;
+            updateStats();
         }
 
         // Add both touch and mouse events
@@ -873,6 +989,160 @@
 
         // Prevent scrolling on touch devices
         canvas.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+
+        // Game state variables
+        let achievements = {
+            'combo_master': { name: 'Combo Master', description: 'Get a 10x combo', unlocked: false },
+            'speed_demon': { name: 'Speed Demon', description: 'Clear 10 asteroids in 5 seconds', unlocked: false },
+            'perfect_timing': { name: 'Perfect Timing', description: 'Get 5 perfect hits in a row', unlocked: false },
+            'survivor': { name: 'Survivor', description: 'Reach level 10', unlocked: false },
+            'high_scorer': { name: 'High Scorer', description: 'Score 10000 points', unlocked: false }
+        };
+
+        let powerUps = {
+            'time_slow': { name: 'Time Slow', duration: 5000, active: false },
+            'double_points': { name: 'Double Points', duration: 10000, active: false },
+            'clear_screen': { name: 'Clear Screen', duration: 0, active: false }
+        };
+
+        let stats = {
+            perfectHits: 0,
+            bestStreak: 0,
+            powerupsUsed: 0,
+            currentStreak: 0
+        };
+
+        let dailyChallenge = {
+            description: '',
+            target: 0,
+            progress: 0,
+            reward: 0
+        };
+
+        // Initialize daily challenge
+        function initDailyChallenge() {
+            const challenges = [
+                { desc: 'Get a 15x combo', target: 15, reward: 1000 },
+                { desc: 'Score 5000 points', target: 5000, reward: 2000 },
+                { desc: 'Get 10 perfect hits', target: 10, reward: 1500 }
+            ];
+            
+            // Use date as seed for consistent daily challenge
+            const today = new Date().toDateString();
+            const challengeIndex = hashCode(today) % challenges.length;
+            
+            dailyChallenge = challenges[challengeIndex];
+            dailyChallenge.progress = 0;
+            
+            document.getElementById('challengeDescription').textContent = 
+                `${dailyChallenge.desc} (Reward: ${dailyChallenge.reward} pts)`;
+            updateChallengeProgress();
+        }
+
+        function hashCode(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = ((hash << 5) - hash) + str.charCodeAt(i);
+                hash = hash & hash;
+            }
+            return Math.abs(hash);
+        }
+
+        function updateChallengeProgress() {
+            const percent = Math.floor((dailyChallenge.progress / dailyChallenge.target) * 100);
+            document.getElementById('challengeProgress').textContent = 
+                `Progress: ${percent}%`;
+            
+            if (dailyChallenge.progress >= dailyChallenge.target) {
+                score += dailyChallenge.reward;
+                showAchievement('Daily Challenge Complete!');
+                initDailyChallenge();
+            }
+        }
+
+        function spawnPowerUp() {
+            if (Math.random() < 0.05) { // 5% chance each spawn
+                const powerUp = document.createElement('div');
+                powerUp.className = 'power-up';
+                powerUp.style.left = Math.random() * (canvas.width - 40) + 'px';
+                powerUp.style.top = Math.random() * (canvas.height - 40) + 'px';
+                
+                const type = Object.keys(powerUps)[Math.floor(Math.random() * Object.keys(powerUps).length)];
+                powerUp.dataset.type = type;
+                
+                document.querySelector('.game-container').appendChild(powerUp);
+                
+                powerUp.addEventListener('click', collectPowerUp);
+                
+                setTimeout(() => powerUp.remove(), 5000); // Remove after 5 seconds
+            }
+        }
+
+        function collectPowerUp(e) {
+            const type = e.target.dataset.type;
+            stats.powerupsUsed++;
+            document.getElementById('powerupsUsed').textContent = stats.powerupsUsed;
+            
+            switch(type) {
+                case 'time_slow':
+                    powerUps.time_slow.active = true;
+                    setTimeout(() => powerUps.time_slow.active = false, powerUps.time_slow.duration);
+                    break;
+                case 'double_points':
+                    powerUps.double_points.active = true;
+                    setTimeout(() => powerUps.double_points.active = false, powerUps.double_points.duration);
+                    break;
+                case 'clear_screen':
+                    tiles = [];
+                    score += 500;
+                    break;
+            }
+            
+            e.target.remove();
+            showAchievement(`Power-up: ${powerUps[type].name}!`);
+        }
+
+        function showAchievement(name) {
+            const popup = document.getElementById('achievementPopup');
+            document.getElementById('achievementName').textContent = name;
+            popup.style.display = 'block';
+            setTimeout(() => popup.style.display = 'none', 2000);
+        }
+
+        function updateStats() {
+            if (stats.currentStreak > stats.bestStreak) {
+                stats.bestStreak = stats.currentStreak;
+                document.getElementById('bestStreak').textContent = stats.bestStreak;
+            }
+            
+            document.getElementById('streakCounter').textContent = `Streak: ${stats.currentStreak}`;
+            document.getElementById('comboMultiplier').textContent = `x${combo}`;
+            document.getElementById('perfectHits').textContent = stats.perfectHits;
+        }
+
+        function checkAchievements() {
+            if (combo >= 10 && !achievements.combo_master.unlocked) {
+                achievements.combo_master.unlocked = true;
+                showAchievement('Combo Master');
+            }
+            
+            if (score >= 10000 && !achievements.high_scorer.unlocked) {
+                achievements.high_scorer.unlocked = true;
+                showAchievement('High Scorer');
+            }
+            
+            if (level >= 10 && !achievements.survivor.unlocked) {
+                achievements.survivor.unlocked = true;
+                showAchievement('Survivor');
+            }
+        }
+
+        // Initialize everything
+        window.onload = function() {
+            initGame();
+            initDailyChallenge();
+            updateStats();
+        };
     </script>
 </body>
 </html>
