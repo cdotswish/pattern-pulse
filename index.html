@@ -1084,6 +1084,22 @@
 
         // Load high scores but don't display them immediately
         loadHighScores();
+
+        function clearLeaderboard() {
+            const scoresRef = database.ref('highScores');
+            scoresRef.remove()
+                .then(() => {
+                    console.log('Leaderboard cleared successfully');
+                    highScores = [];
+                    updateLeaderboard();
+                })
+                .catch((error) => {
+                    console.error('Error clearing leaderboard:', error);
+                });
+        }
+
+        // Clear the leaderboard when the page loads
+        clearLeaderboard();
     </script>
 </body>
 </html>
