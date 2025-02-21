@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <title>Asteroid Blaster</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
@@ -559,8 +559,8 @@
         </div>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script>
         // Initialize Firebase
         const firebaseConfig = {
@@ -573,33 +573,39 @@
             appId: "1:404691518438:web:b3a1d8e849c4fb2f7f7d24"
         };
 
-        // Initialize Firebase and start loading scores
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
+        let database;
         
-        // Verify database connection
-        const connectedRef = database.ref(".info/connected");
-        connectedRef.on("value", (snap) => {
-            if (snap.val() === true) {
-                console.log("Connected to Firebase:", firebaseConfig.databaseURL);
-                
-                // Test write to verify permissions
-                database.ref('test').set({
-                    timestamp: firebase.database.ServerValue.TIMESTAMP
-                })
-                .then(() => {
-                    console.log("Successfully wrote to database");
-                    database.ref('test').remove(); // Clean up test data
-                })
-                .catch((error) => {
-                    console.error("Database write failed:", error);
-                });
-                
-                loadHighScores(); // Load scores once connected
-            } else {
-                console.error("Not connected to Firebase");
-            }
-        });
+        // Initialize Firebase with error handling
+        try {
+            firebase.initializeApp(firebaseConfig);
+            database = firebase.database();
+            console.log("Firebase initialized successfully");
+            
+            // Verify database connection
+            const connectedRef = database.ref(".info/connected");
+            connectedRef.on("value", (snap) => {
+                if (snap.val() === true) {
+                    console.log("Connected to Firebase:", firebaseConfig.databaseURL);
+                    // Test database write
+                    database.ref('test').set({
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    })
+                    .then(() => {
+                        console.log("Database write test successful");
+                        database.ref('test').remove();
+                        // Load initial scores
+                        loadHighScores();
+                    })
+                    .catch((error) => {
+                        console.error("Database write test failed:", error);
+                    });
+                } else {
+                    console.error("Not connected to Firebase");
+                }
+            });
+        } catch (error) {
+            console.error("Error initializing Firebase:", error);
+        }
 
         let highScores = [];
 
@@ -670,6 +676,8 @@
             scoresRef.push(scoreData)
                 .then(() => {
                     console.log('Score saved successfully:', scoreData);
+                    // Force a refresh of the leaderboard
+                    loadHighScores();
                 })
                 .catch((error) => {
                     console.error('Error saving score:', error);
@@ -1061,7 +1069,12 @@
             document.getElementById('menu-btn').style.display = 'block';
             
             // Save score to Firebase
-            saveScore(currentPlayer, score, level);
+            if (database) {
+                console.log("Attempting to save score:", { player: currentPlayer, score: score, level: level });
+                saveScore(currentPlayer, score, level);
+            } else {
+                console.error("Database not initialized for saving score");
+            }
         }
 
         function updateStats() {
