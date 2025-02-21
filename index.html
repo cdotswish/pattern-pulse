@@ -214,22 +214,28 @@
 
         .tab-content {
             display: none;
-            padding: 30px;
+            padding: 20px;
             background: rgba(0, 0, 0, 0.4);
             border-radius: 15px;
             margin: 20px 0;
             border: 1px solid rgba(62, 118, 244, 0.3);
             box-shadow: 0 0 20px rgba(62, 118, 244, 0.1);
+            animation: fadeIn 0.3s ease;
         }
 
         .tab-content.active {
             display: block;
-            animation: fadeIn 0.3s ease;
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from { 
+                opacity: 0; 
+                transform: translateY(-10px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
         }
 
         .leaderboard-entry {
@@ -388,6 +394,12 @@
                 <button class="btn" onclick="toggleLeaderboard()">Leaderboard</button>
             </div>
             
+            <!-- Leaderboard Tab -->
+            <div id="leaderboard-tab" class="tab-content">
+                <h2>Global Top Scores</h2>
+                <div id="leaderboard-list"></div>
+            </div>
+            
             <!-- Instructions -->
             <div class="instructions">
                 <h2>How to Play</h2>
@@ -400,12 +412,6 @@
                     <li>More asteroids needed to progress</li>
                 </ul>
                 <p>If any asteroid reaches the bottom, it's game over!</p>
-            </div>
-            
-            <!-- Leaderboard Tab -->
-            <div id="leaderboard-tab" class="tab-content">
-                <h2>Global Top Scores</h2>
-                <div id="leaderboard-list"></div>
             </div>
         </div>
 
