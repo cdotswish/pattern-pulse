@@ -46,9 +46,13 @@
         }
 
         canvas {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             border: 2px solid #333;
             box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
-            display: none;
+            z-index: 1;
         }
 
         #ui {
@@ -372,7 +376,7 @@
         // Game variables
         let gameStarted = false;
         let score = 0;
-        let highScore = localStorage.getItem('highScore') || 0;
+        let highScore = parseInt(localStorage.getItem('highScore')) || 0;
         let level = 1;
         let tiles = [];
         let baseSpeed = 2;
@@ -527,19 +531,24 @@
         // Load asteroid image
         const asteroidImage = new Image();
         asteroidImage.src = 'https://www.transparentpng.com/thumb/asteroid/gray-asteroid-transparent-background-UxhJSc.png';
-        
+        let isAsteroidImageLoaded = false;
+
+        asteroidImage.onload = () => {
+            isAsteroidImageLoaded = true;
+        };
+
         class Asteroid {
             constructor() {
-                this.width = 60;
-                this.height = 60;
+                this.width = 80;
+                this.height = 80;
                 this.x = Math.random() * (canvas.width - this.width);
                 this.y = -this.height;
                 this.speed = baseSpeed;
                 this.rotation = 0;
-                this.rotationSpeed = (Math.random() - 0.5) * 0.1;
+                this.rotationSpeed = (Math.random() - 0.5) * 0.05;
                 this.scale = 1;
                 this.pulseDirection = 1;
-                this.pulseSpeed = 0.02;
+                this.pulseSpeed = 0.01;
             }
 
             update() {
@@ -547,18 +556,37 @@
                 this.rotation += this.rotationSpeed;
                 
                 // Pulsing effect
-                if (this.scale >= 1.2) this.pulseDirection = -1;
-                if (this.scale <= 0.8) this.pulseDirection = 1;
+                if (this.scale >= 1.1) this.pulseDirection = -1;
+                if (this.scale <= 0.9) this.pulseDirection = 1;
                 this.scale += this.pulseDirection * this.pulseSpeed;
             }
 
             draw() {
-                ctx.save();
-                ctx.translate(this.x + this.width/2, this.y + this.height/2);
-                ctx.rotate(this.rotation);
-                ctx.scale(this.scale, this.scale);
-                ctx.drawImage(asteroidImage, -this.width/2, -this.height/2, this.width, this.height);
-                ctx.restore();
+                if (!isAsteroidImageLoaded) {
+                    // Fallback shape if image isn't loaded
+                    ctx.save();
+                    ctx.translate(this.x + this.width/2, this.y + this.height/2);
+                    ctx.rotate(this.rotation);
+                    ctx.scale(this.scale, this.scale);
+                    ctx.fillStyle = '#666666';
+                    ctx.beginPath();
+                    ctx.moveTo(-this.width/2, 0);
+                    ctx.lineTo(-this.width/4, -this.height/2);
+                    ctx.lineTo(this.width/4, -this.height/2);
+                    ctx.lineTo(this.width/2, 0);
+                    ctx.lineTo(this.width/4, this.height/2);
+                    ctx.lineTo(-this.width/4, this.height/2);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.restore();
+                } else {
+                    ctx.save();
+                    ctx.translate(this.x + this.width/2, this.y + this.height/2);
+                    ctx.rotate(this.rotation);
+                    ctx.scale(this.scale, this.scale);
+                    ctx.drawImage(asteroidImage, -this.width/2, -this.height/2, this.width, this.height);
+                    ctx.restore();
+                }
             }
 
             isClicked(mouseX, mouseY) {
@@ -584,46 +612,19 @@
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            tiles = tiles.filter(tile => {
+            for (let i = tiles.length - 1; i >= 0; i--) {
+                const tile = tiles[i];
                 tile.update();
                 tile.draw();
                 
                 if (tile.y > canvas.height) {
                     gameOver();
-                    return false;
+                    return;
                 }
-                return true;
-            });
+            }
 
             requestAnimationFrame(updateGame);
         }
-
-        canvas.addEventListener('click', (e) => {
-            if (!gameStarted) return;
-
-            const rect = canvas.getBoundingClientRect();
-            const mouseX = e.clientX - rect.left;
-            const mouseY = e.clientY - rect.top;
-
-            for (let i = tiles.length - 1; i >= 0; i--) {
-                if (tiles[i].isClicked(mouseX, mouseY)) {
-                    tiles.splice(i, 1);
-                    score += 10 * (combo + 1);
-                    combo++;
-                    scoreDisplay.textContent = `Score: ${score}`;
-                    
-                    if (score >= level * 500) {
-                        level++;
-                        baseSpeed += 0.5;
-                        spawnInterval = Math.max(300, spawnInterval - 50);
-                        levelDisplay.textContent = `Level: ${level}`;
-                    }
-
-                    playHitSound();
-                    break;
-                }
-            }
-        });
 
         function startGame() {
             createStars();
