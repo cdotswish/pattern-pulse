@@ -761,13 +761,13 @@
         // Initialize Firebase with error handling
         try {
             const firebaseConfig = {
-                apiKey: "AIzaSyDFqxqZWxqRDGsXqvYqvp0_XpxXvB4sICg",
-                authDomain: "pattern-pulse.firebaseapp.com",
-                databaseURL: "https://pattern-pulse-default-rtdb.firebaseio.com",
-                projectId: "pattern-pulse",
-                storageBucket: "pattern-pulse.appspot.com",
-                messagingSenderId: "1234567890",
-                appId: "1:1234567890:web:1234567890abcdef"
+                apiKey: "AIzaSyA_JDJHGFJnPh7UXhNE-U5sPJfzwH2Jz_8",
+                authDomain: "pattern-pulse-game.firebaseapp.com",
+                databaseURL: "https://pattern-pulse-game-default-rtdb.firebaseio.com",
+                projectId: "pattern-pulse-game",
+                storageBucket: "pattern-pulse-game.appspot.com",
+                messagingSenderId: "848383588708",
+                appId: "1:848383588708:web:3b9d3e9d9d3e9d9d3e9d9d"
             };
             firebase.initializeApp(firebaseConfig);
             const database = firebase.database();
@@ -856,25 +856,34 @@
 
                 // Simple click handler
                 canvas.onclick = function(e) {
-                    if (!gameStarted || gameOver) return;
+                    if (!gameStarted || gameOver) {
+                        console.log('Game not active');
+                        return;
+                    }
                     
                     const rect = canvas.getBoundingClientRect();
-                    const x = (e.clientX - rect.left) * (canvas.width / rect.width);
-                    const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+                    const scaleX = canvas.width / rect.width;
+                    const scaleY = canvas.height / rect.height;
+                    
+                    const touch = e.touches[0];
+                    const x = (touch.clientX - rect.left) * scaleX;
+                    const y = (touch.clientY - rect.top) * scaleY;
                     
                     console.log('Click at:', x, y);
                     
-                    tiles.forEach((tile, index) => {
+                    // Check each asteroid
+                    for (let i = tiles.length - 1; i >= 0; i--) {
+                        const tile = tiles[i];
                         const dx = x - tile.x;
                         const dy = y - tile.y;
                         const distance = Math.sqrt(dx * dx + dy * dy);
                         
                         if (distance < ASTEROID_SIZE) {
-                            // Create explosion
+                            // Create explosion effect
                             createParticles(tile.x, tile.y);
                             
                             // Remove asteroid
-                            tiles.splice(index, 1);
+                            tiles.splice(i, 1);
                             
                             // Update score
                             score += 10;
@@ -887,8 +896,9 @@
                                 baseSpeed += SPEED_INCREASE;
                                 spawnInterval = Math.max(MIN_SPAWN_INTERVAL, spawnInterval - SPAWN_INTERVAL_DECREASE);
                             }
+                            break;
                         }
-                    });
+                    }
                 };
 
                 // Simple touch handler
@@ -897,29 +907,43 @@
                     if (!gameStarted || gameOver) return;
                     
                     const rect = canvas.getBoundingClientRect();
-                    const touch = e.touches[0];
-                    const x = (touch.clientX - rect.left) * (canvas.width / rect.width);
-                    const y = (touch.clientY - rect.top) * (canvas.height / rect.height);
+                    const scaleX = canvas.width / rect.width;
+                    const scaleY = canvas.height / rect.height;
                     
-                    tiles.forEach((tile, index) => {
+                    const touch = e.touches[0];
+                    const x = (touch.clientX - rect.left) * scaleX;
+                    const y = (touch.clientY - rect.top) * scaleY;
+                    
+                    console.log('Touch at:', x, y);
+                    
+                    // Check each asteroid
+                    for (let i = tiles.length - 1; i >= 0; i--) {
+                        const tile = tiles[i];
                         const dx = x - tile.x;
                         const dy = y - tile.y;
                         const distance = Math.sqrt(dx * dx + dy * dy);
                         
                         if (distance < ASTEROID_SIZE) {
+                            // Create explosion effect
                             createParticles(tile.x, tile.y);
-                            tiles.splice(index, 1);
+                            
+                            // Remove asteroid
+                            tiles.splice(i, 1);
+                            
+                            // Update score
                             score += 10;
                             scoreDisplay.textContent = 'Score: ' + score;
                             
+                            // Update level
                             if (score >= level * LEVEL_INCREASE_SCORE) {
                                 level++;
                                 levelDisplay.textContent = 'Level: ' + level;
                                 baseSpeed += SPEED_INCREASE;
                                 spawnInterval = Math.max(MIN_SPAWN_INTERVAL, spawnInterval - SPAWN_INTERVAL_DECREASE);
                             }
+                            break;
                         }
-                    });
+                    }
                 };
 
                 function createParticles(x, y) {
