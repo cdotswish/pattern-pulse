@@ -28,8 +28,8 @@
 
         canvas {
             background: transparent;
-            border: 2px solid #333;
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+            border: none;
+            box-shadow: none;
         }
 
         .space-background {
@@ -627,7 +627,15 @@
                 lastSpawnTime = currentTime;
             }
 
+            // Clear with transparent background
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw a subtle gradient for game area visibility
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0.2)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             for (let i = tiles.length - 1; i >= 0; i--) {
                 const tile = tiles[i];
