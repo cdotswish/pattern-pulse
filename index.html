@@ -636,12 +636,135 @@
             let highScore = 0;
 
             // Game configuration
-            const ASTEROID_SIZE = window.innerWidth < 768 ? 30 : 40;
-            const MOBILE_MARGIN = window.innerWidth < 768 ? 40 : 60;
+            const ASTEROID_SIZE = window.innerWidth < 768 ? 25 : 35;
+            const MOBILE_MARGIN = window.innerWidth < 768 ? 30 : 50;
             const INITIAL_SPEED = 1;
             const SPEED_INCREASE = 0.2;
             const INITIAL_SPAWN_INTERVAL = 2000;
             const MIN_SPAWN_INTERVAL = 500;
+            
+            // Visual effects
+            const EXPLOSION_PARTICLES = 12;
+            const PARTICLE_SPEED = 3;
+            const PARTICLE_DECAY = 0.95;
+            let particles = [];
+            
+            // Asteroid spawn patterns
+            const spawnPatterns = {
+                random: () => Math.random() * (canvas.width - 2 * MOBILE_MARGIN) + MOBILE_MARGIN,
+                leftToRight: (progress) => MOBILE_MARGIN + progress * (canvas.width - 2 * MOBILE_MARGIN),
+                rightToLeft: (progress) => canvas.width - MOBILE_MARGIN - progress * (canvas.width - 2 * MOBILE_MARGIN),
+                zigzag: (progress) => MOBILE_MARGIN + Math.sin(progress * Math.PI * 2) * (canvas.width - 2 * MOBILE_MARGIN) / 2 + (canvas.width - 2 * MOBILE_MARGIN) / 2
+            };
+            
+            let currentPattern = 'random';
+            let patternProgress = 0;
+            
+            function createParticles(x, y, color) {
+                for (let i = 0; i < EXPLOSION_PARTICLES; i++) {
+                    const angle = (i / EXPLOSION_PARTICLES) * Math.PI * 2;
+                    particles.push({
+                        x: x,
+                        y: y,
+                        vx: Math.cos(angle) * PARTICLE_SPEED,
+                        vy: Math.sin(angle) * PARTICLE_SPEED,
+                        alpha: 1,
+                        color: color
+                    });
+                }
+            }
+            
+            function updateParticles(ctx) {
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    const particle = particles[i];
+                    particle.x += particle.vx;
+                    particle.y += particle.vy;
+                    particle.alpha *= PARTICLE_DECAY;
+                    
+                    ctx.save();
+                    ctx.globalAlpha = particle.alpha;
+                    ctx.beginPath();
+                    ctx.arc(particle.x, particle.y, 2, 0, Math.PI * 2);
+                    ctx.fillStyle = particle.color;
+                    ctx.fill();
+                    ctx.restore();
+                    
+                    if (particle.alpha < 0.1) {
+                        particles.splice(i, 1);
+                    }
+                }
+            }
+            
+            function spawnTile() {
+                patternProgress += 0.1;
+                if (patternProgress >= 1) {
+                    patternProgress = 0;
+                    // Randomly change pattern
+                    const patterns = Object.keys(spawnPatterns);
+                    currentPattern = patterns[Math.floor(Math.random() * patterns.length)];
+                }
+                
+                const x = spawnPatterns[currentPattern](patternProgress);
+                tiles.push({
+                    x: x,
+                    y: -ASTEROID_SIZE,
+                    rotation: Math.random() * Math.PI * 2,
+                    rotationSpeed: (Math.random() - 0.5) * 0.1,
+                    scale: 1,
+                    pulsePhase: Math.random() * Math.PI * 2
+                });
+            }
+
+            function drawAsteroid(ctx, x, y, rotation, scale) {
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(rotation);
+                ctx.scale(scale, scale);
+                
+                // Main asteroid body
+                ctx.beginPath();
+                ctx.arc(0, 0, ASTEROID_SIZE/2, 0, Math.PI * 2);
+                
+                // Add some roughness to the edge
+                for (let i = 0; i < 8; i++) {
+                    const angle = (i / 8) * Math.PI * 2;
+                    const bumpSize = (Math.random() * 0.2 + 0.9) * ASTEROID_SIZE/2;
+                    ctx.lineTo(
+                        Math.cos(angle) * bumpSize,
+                        Math.sin(angle) * bumpSize
+                    );
+                }
+                
+                ctx.closePath();
+                ctx.fillStyle = '#8B4513';
+                ctx.fill();
+                ctx.strokeStyle = '#654321';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                
+                // Add craters with shadows
+                const craterPositions = [
+                    { x: -ASTEROID_SIZE/4, y: -ASTEROID_SIZE/4 },
+                    { x: ASTEROID_SIZE/4, y: ASTEROID_SIZE/4 },
+                    { x: 0, y: 0 }
+                ];
+                
+                craterPositions.forEach(pos => {
+                    // Crater shadow
+                    ctx.beginPath();
+                    ctx.arc(pos.x + 2, pos.y + 2, ASTEROID_SIZE/6, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                    ctx.fill();
+                    
+                    // Crater
+                    ctx.beginPath();
+                    ctx.arc(pos.x, pos.y, ASTEROID_SIZE/6, 0, Math.PI * 2);
+                    ctx.fillStyle = '#654321';
+                    ctx.fill();
+                });
+                
+                ctx.restore();
+            }
 
             // Responsive canvas sizing
             function resizeCanvas() {
@@ -798,38 +921,24 @@
 
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 
+                // Update and draw particles
+                updateParticles(ctx);
+                
                 for (let i = tiles.length - 1; i >= 0; i--) {
                     const tile = tiles[i];
                     tile.y += baseSpeed;
+                    tile.rotation += tile.rotationSpeed;
                     
-                    // Draw asteroid
-                    ctx.save();
-                    ctx.beginPath();
-                    ctx.arc(tile.x, tile.y, ASTEROID_SIZE/2, 0, Math.PI * 2);
-                    ctx.fillStyle = '#8B4513';
-                    ctx.strokeStyle = '#654321';
-                    ctx.lineWidth = 3;
-                    ctx.fill();
-                    ctx.stroke();
+                    // Pulsing effect
+                    tile.pulsePhase += 0.1;
+                    tile.scale = 1 + Math.sin(tile.pulsePhase) * 0.1;
                     
-                    // Add crater details
-                    const craterPositions = [
-                        { x: -ASTEROID_SIZE/4, y: -ASTEROID_SIZE/4 },
-                        { x: ASTEROID_SIZE/4, y: ASTEROID_SIZE/4 },
-                        { x: 0, y: 0 }
-                    ];
-                    
-                    craterPositions.forEach(pos => {
-                        ctx.beginPath();
-                        ctx.arc(tile.x + pos.x, tile.y + pos.y, ASTEROID_SIZE/6, 0, Math.PI * 2);
-                        ctx.fillStyle = '#654321';
-                        ctx.fill();
-                    });
-                    
-                    ctx.restore();
+                    // Draw asteroid with enhanced visuals
+                    drawAsteroid(ctx, tile.x, tile.y, tile.rotation, tile.scale);
                     
                     // Check if asteroid hits bottom
                     if (tile.y > canvas.height - ASTEROID_SIZE/2) {
+                        createParticles(tile.x, tile.y, '#FF4444'); // Red explosion
                         gameOver();
                         return;
                     }
@@ -838,17 +947,6 @@
                 requestAnimationFrame(updateGame);
             }
 
-            // Spawn new tile
-            function spawnTile() {
-                const spawnPoint = spawnPoints[Math.floor(Math.random() * spawnPoints.length)];
-                tiles.push({
-                    x: spawnPoint.x,
-                    y: spawnPoint.y,
-                    rotation: Math.random() * Math.PI * 2
-                });
-            }
-
-            // Handle clicks/touches
             function handleInteraction(x, y) {
                 if (!gameStarted) return;
 
@@ -857,6 +955,9 @@
                     const distance = Math.sqrt(Math.pow(x - tile.x, 2) + Math.pow(y - tile.y, 2));
                     
                     if (distance < ASTEROID_SIZE/2) {
+                        // Create explosion effect
+                        createParticles(tile.x, tile.y, '#FFD700'); // Golden explosion
+                        
                         tiles.splice(i, 1);
                         score += 10 * combo;
                         combo++;
@@ -865,7 +966,6 @@
                         comboMultiplier.textContent = `x${combo}`;
                         streakCounter.textContent = `Streak: ${combo - 1}`;
                         
-                        // Level up every 200 points
                         if (score > level * 200) {
                             level++;
                             levelDisplay.textContent = `Level: ${level}`;
