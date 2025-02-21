@@ -233,7 +233,7 @@
             
             <!-- Leaderboard Tab -->
             <div id="leaderboard-tab" class="tab-content">
-                <h2>Top Scores</h2>
+                <h2>Global Top Scores</h2>
                 <div id="leaderboard-list"></div>
             </div>
         </div>
@@ -414,6 +414,21 @@
             }
         }
 
+        function returnToMenu() {
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+            gameActive = false;
+            document.getElementById('game-screen').style.display = 'none';
+            document.getElementById('menu-screen').style.display = 'block';
+            document.getElementById('menu-btn').style.display = 'none';
+            
+            // Hide leaderboard when returning to menu
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+        }
+
         class Asteroid {
             constructor() {
                 this.x = Math.random() * (canvas.width - 40);
@@ -580,7 +595,11 @@
             document.getElementById('game-screen').style.display = 'none';
             document.getElementById('menu-screen').style.display = 'block';
             document.getElementById('menu-btn').style.display = 'none';
-            showTab('leaderboard');
+            
+            // Hide leaderboard when returning to menu
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
         }
 
         function startWave() {
@@ -716,9 +735,8 @@
             }
         });
 
-        // Initialize the game
+        // Load high scores but don't display them immediately
         loadHighScores();
-        showTab('leaderboard');
     </script>
 </body>
 </html>
