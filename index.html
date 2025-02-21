@@ -320,136 +320,78 @@
 
         .stats-display {
             color: white;
-            font-size: 20px;
-            margin: 15px 0;
+            font-size: 16px;
+            margin: 10px auto;
             display: flex;
+            flex-wrap: wrap;
             justify-content: center;
-            gap: 30px;
+            gap: 15px;
             background-color: rgba(0, 0, 0, 0.3);
-            padding: 15px;
+            padding: 10px;
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
         }
 
         .stat-item {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
+            white-space: nowrap;
+            margin: 0 5px;
         }
 
         .stat-label {
             color: #e74c3c;
             font-weight: bold;
+            font-size: 14px;
         }
 
         .stat-value {
             color: #fff;
-            font-size: 24px;
+            font-size: 16px;
+        }
+
+        #game-screen {
+            display: none;
+            width: 100%;
+            max-width: 100%;
+            overflow-x: hidden;
+            padding: 10px;
+            box-sizing: border-box;
         }
 
         #game-canvas {
             border: 3px solid rgba(255, 255, 255, 0.2);
             background-color: rgba(0, 0, 0, 0.6);
-            margin: 15px auto;
+            margin: 10px auto;
             border-radius: 10px;
             box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
             max-width: 100%;
             height: auto;
-        }
-
-        .level-display {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 48px;
-            font-weight: bold;
-            color: #e74c3c;
-            text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-            display: none;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 20px 40px;
-            border-radius: 15px;
-            z-index: 10;
-        }
-
-        .wave-message {
-            font-size: 24px;
-            color: #fff;
-            margin-top: 10px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        #game-screen {
-            display: none;
-            max-height: 90vh;
-            overflow-y: auto;
-            width: 100%;
-            max-width: 100%;
-            overflow-x: hidden;
-        }
-
-        #menu-screen {
             display: block;
         }
 
-        .screen {
-            width: 100%;
-        }
-
-        @media (min-width: 768px) {
+        @media (max-width: 480px) {
             body {
-                padding: 20px;
+                padding: 10px 5px;
             }
 
             .container {
-                padding: 30px;
+                padding: 15px 10px;
+                margin: 5px auto;
             }
 
             h1 {
-                font-size: 48px;
-            }
-
-            .btn {
-                width: auto;
-                font-size: 18px;
-                padding: 15px 30px;
-            }
-
-            input[type="text"] {
-                width: 250px;
-                font-size: 18px;
-            }
-
-            .leaderboard-entry {
-                padding: 20px;
-                flex-wrap: nowrap;
-            }
-
-            .score-left, .score-right {
-                width: auto;
-                justify-content: space-between;
-            }
-
-            .score-left {
-                gap: 20px;
-            }
-
-            .score-right {
-                gap: 25px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            h1 {
-                font-size: 32px;
-                margin-bottom: 20px;
+                font-size: 28px;
+                margin-bottom: 15px;
                 letter-spacing: 2px;
             }
 
             .instructions h2 {
-                font-size: 24px;
+                font-size: 20px;
             }
 
             .instructions p, .instructions li {
@@ -457,7 +399,7 @@
             }
 
             .rank {
-                font-size: 24px;
+                font-size: 20px;
             }
 
             .player-name, .score-value, .level-value {
@@ -465,6 +407,89 @@
             }
 
             .date-value {
+                font-size: 12px;
+            }
+
+            .stats-display {
+                font-size: 14px;
+                padding: 8px 5px;
+                gap: 8px;
+            }
+
+            .stat-item {
+                gap: 5px;
+                margin: 0 3px;
+            }
+
+            .stat-label {
+                font-size: 12px;
+            }
+
+            .stat-value {
+                font-size: 14px;
+            }
+
+            .menu-content {
+                padding: 15px 10px;
+            }
+
+            .btn {
+                padding: 12px 20px;
+                font-size: 14px;
+                margin: 8px;
+            }
+
+            input[type="text"] {
+                padding: 12px 15px;
+                font-size: 14px;
+            }
+        }
+
+        /* iOS-specific fixes */
+        @supports (-webkit-touch-callout: none) {
+            body {
+                min-height: -webkit-fill-available;
+            }
+
+            .container {
+                width: 100%;
+                max-width: 100%;
+                margin: 5px auto;
+                padding: 15px 10px;
+            }
+
+            #game-screen {
+                padding: 5px;
+            }
+
+            .stats-display {
+                width: calc(100% - 10px);
+                margin: 5px auto;
+            }
+
+            #game-canvas {
+                width: 100%;
+                max-width: calc(100% - 10px);
+                margin: 5px auto;
+            }
+        }
+
+        @media (max-width: 480px) and (-webkit-touch-callout: none) {
+            .stats-display {
+                font-size: 12px;
+                padding: 5px;
+            }
+
+            .stat-item {
+                gap: 4px;
+                margin: 0 2px;
+            }
+
+            .stat-label {
+                font-size: 11px;
+            }
+
+            .stat-value {
                 font-size: 12px;
             }
         }
