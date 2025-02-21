@@ -233,7 +233,6 @@
             
             <!-- Leaderboard Tab -->
             <div id="leaderboard-tab" class="tab-content">
-                <h2>Global Top Scores</h2>
                 <div id="leaderboard-list"></div>
             </div>
         </div>
@@ -372,12 +371,14 @@
 
         function updateLeaderboard() {
             const leaderboardList = document.getElementById('leaderboard-list');
-            leaderboardList.innerHTML = '<h3>Global Top Scores</h3>';
+            leaderboardList.innerHTML = '';
             
             if (highScores.length === 0) {
                 leaderboardList.innerHTML += '<div class="leaderboard-entry">No scores yet!</div>';
                 return;
             }
+            
+            leaderboardList.innerHTML += '<h3>Global Top Scores</h3>';
             
             highScores.forEach((entry, index) => {
                 const scoreEntry = document.createElement('div');
