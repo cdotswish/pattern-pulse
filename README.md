@@ -4,7 +4,7 @@ A fast-paced rhythm puzzle game where you match colored tiles to the beat! Test 
 
 ## Play Now
 
-[Play Pattern Pulse Online](https://your-github-username.github.io/pattern-pulse)
+[Play Pattern Pulse Online](https://cdotswish.github.io/pattern-pulse)
 
 ## Features
 
