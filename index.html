@@ -346,9 +346,8 @@
             <div class="menu-content">
                 <input type="text" id="player-name" placeholder="Enter your name" maxlength="15">
                 <button class="btn" onclick="startGame()">Start Game</button>
+                <button class="btn" onclick="toggleLeaderboard()">Leaderboard</button>
             </div>
-            
-            <button class="btn" onclick="showTab('leaderboard')">Leaderboard</button>
             
             <!-- Instructions -->
             <div class="instructions">
@@ -539,24 +538,13 @@
             });
         }
 
-        function showTab(tabName) {
+        function toggleLeaderboard() {
             const leaderboardTab = document.getElementById('leaderboard-tab');
-            
-            if (tabName === 'leaderboard') {
-                // Toggle the leaderboard
-                if (leaderboardTab.classList.contains('active')) {
-                    // If it's active, hide it
-                    leaderboardTab.classList.remove('active');
-                } else {
-                    // If it's hidden, show it and update
-                    leaderboardTab.classList.add('active');
-                    updateLeaderboard();
-                }
+            if (leaderboardTab.classList.contains('active')) {
+                leaderboardTab.classList.remove('active');
             } else {
-                // For other tabs, just hide everything
-                document.querySelectorAll('.tab-content').forEach(tab => {
-                    tab.classList.remove('active');
-                });
+                leaderboardTab.classList.add('active');
+                updateLeaderboard();
             }
         }
 
