@@ -407,15 +407,23 @@
         }
 
         function showTab(tabName) {
-            // Hide all tab content
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
+            const leaderboardTab = document.getElementById('leaderboard-tab');
             
-            // Show selected tab and update if it's leaderboard
             if (tabName === 'leaderboard') {
-                document.getElementById('leaderboard-tab').classList.add('active');
-                updateLeaderboard();
+                // Toggle the leaderboard
+                if (leaderboardTab.classList.contains('active')) {
+                    // If it's active, hide it
+                    leaderboardTab.classList.remove('active');
+                } else {
+                    // If it's hidden, show it and update
+                    leaderboardTab.classList.add('active');
+                    updateLeaderboard();
+                }
+            } else {
+                // For other tabs, just hide everything
+                document.querySelectorAll('.tab-content').forEach(tab => {
+                    tab.classList.remove('active');
+                });
             }
         }
 
