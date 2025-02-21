@@ -124,15 +124,54 @@
         .leaderboard-entry {
             display: flex;
             justify-content: space-between;
+            align-items: center;
             padding: 15px;
             background-color: rgba(255, 255, 255, 0.1);
             margin: 10px 0;
             border-radius: 8px;
             font-size: 18px;
-            transition: background-color 0.3s;
+            transition: all 0.3s ease;
         }
         .leaderboard-entry:hover {
             background-color: rgba(255, 255, 255, 0.2);
+            transform: translateX(5px);
+        }
+        .score-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .score-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .rank {
+            font-weight: bold;
+            color: #e74c3c;
+            font-size: 24px;
+        }
+        .player-name {
+            font-weight: bold;
+            color: #fff;
+        }
+        .score-value {
+            color: #2ecc71;
+            font-weight: bold;
+        }
+        .level-value {
+            color: #f1c40f;
+        }
+        .date-value {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        #leaderboard-list h3 {
+            color: #3498db;
+            font-size: 28px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
         input[type="text"] {
             padding: 10px;
@@ -221,7 +260,16 @@
         </div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script>
+        // Initialize Firebase
+        const firebaseConfig = {
+            databaseURL: "https://pattern-pulse-default-rtdb.firebaseio.com/"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
         const canvas = document.getElementById("game-canvas");
         const ctx = canvas.getContext("2d");
         const levelDisplay = document.getElementById("level-display");
@@ -283,51 +331,75 @@
             noise.stop(audioContext.currentTime + 0.2);
         }
 
+        // Load high scores from Firebase
         function loadHighScores() {
-            const savedScores = localStorage.getItem('asteroidBlasterScores');
-            if (savedScores) {
-                highScores = JSON.parse(savedScores);
+            const scoresRef = database.ref('highScores');
+            scoresRef.orderByChild('score')
+                    .limitToLast(10)
+                    .on('value', (snapshot) => {
+                const scores = [];
+                snapshot.forEach((childSnapshot) => {
+                    scores.push(childSnapshot.val());
+                });
+                highScores = scores.reverse(); // Reverse to get descending order
                 updateLeaderboard();
-            }
-        }
-
-        // Update leaderboard display
-        function updateLeaderboard() {
-            const leaderboardList = document.getElementById('leaderboard-list');
-            leaderboardList.innerHTML = '';
-            
-            // Sort scores in descending order
-            highScores.sort((a, b) => b.score - a.score);
-            
-            // Keep only top 10 scores
-            highScores = highScores.slice(0, 10);
-            
-            // Display scores
-            highScores.forEach((entry, index) => {
-                const scoreEntry = document.createElement('div');
-                scoreEntry.className = 'leaderboard-entry';
-                scoreEntry.innerHTML = `
-                    <span>${index + 1}. ${entry.name}</span>
-                    <span>Score: ${entry.score} (Level ${entry.level})</span>
-                `;
-                leaderboardList.appendChild(scoreEntry);
             });
         }
 
         function updateHighScores() {
-            highScores.push({
+            const newScore = {
                 name: currentPlayer,
                 score: score,
-                level: level
+                level: level,
+                timestamp: Date.now()
+            };
+
+            // Add the new score to Firebase
+            database.ref('highScores').push(newScore)
+                .then(() => {
+                    // Score added successfully
+                    console.log('Score added to global leaderboard');
+                })
+                .catch((error) => {
+                    console.error('Error adding score:', error);
+                    // Fallback to local storage if Firebase fails
+                    const localScores = JSON.parse(localStorage.getItem('asteroidBlasterScores') || '[]');
+                    localScores.push(newScore);
+                    localScores.sort((a, b) => b.score - a.score);
+                    localStorage.setItem('asteroidBlasterScores', JSON.stringify(localScores.slice(0, 10)));
+                });
+        }
+
+        function updateLeaderboard() {
+            const leaderboardList = document.getElementById('leaderboard-list');
+            leaderboardList.innerHTML = '<h3>Global Top Scores</h3>';
+            
+            if (highScores.length === 0) {
+                leaderboardList.innerHTML += '<div class="leaderboard-entry">No scores yet!</div>';
+                return;
+            }
+            
+            highScores.forEach((entry, index) => {
+                const scoreEntry = document.createElement('div');
+                scoreEntry.className = 'leaderboard-entry';
+                
+                // Format the date
+                const date = new Date(entry.timestamp);
+                const dateStr = date.toLocaleDateString();
+                
+                scoreEntry.innerHTML = `
+                    <div class="score-left">
+                        <span class="rank">#${index + 1}</span>
+                        <span class="player-name">${entry.name}</span>
+                    </div>
+                    <div class="score-right">
+                        <span class="score-value">Score: ${entry.score}</span>
+                        <span class="level-value">Level ${entry.level}</span>
+                        <span class="date-value">${dateStr}</span>
+                    </div>
+                `;
+                leaderboardList.appendChild(scoreEntry);
             });
-            
-            // Sort and keep top 10
-            highScores.sort((a, b) => b.score - a.score);
-            highScores = highScores.slice(0, 10);
-            
-            // Save to localStorage
-            localStorage.setItem('asteroidBlasterScores', JSON.stringify(highScores));
-            updateLeaderboard();
         }
 
         function showTab(tabName) {
