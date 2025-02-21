@@ -16,15 +16,51 @@
             min-height: 100vh;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
             position: relative;
-            overflow: hidden;
+            overflow-y: auto;
+            padding: 20px;
         }
 
-        /* Animated stars background */
+        .container {
+            text-align: center;
+            position: relative;
+            width: 900px;
+            max-width: 95%;
+            padding: 30px;
+            background: rgba(10, 10, 46, 0.8);
+            border-radius: 20px;
+            box-shadow: 0 0 40px rgba(62, 118, 244, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(62, 118, 244, 0.2);
+            margin: 20px auto;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        /* Custom scrollbar styling */
+        .container::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        .container::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+        }
+
+        .container::-webkit-scrollbar-thumb {
+            background: rgba(62, 118, 244, 0.5);
+            border-radius: 5px;
+        }
+
+        .container::-webkit-scrollbar-thumb:hover {
+            background: rgba(62, 118, 244, 0.7);
+        }
+
+        /* Animated stars background - make it fixed */
         body::before {
             content: '';
-            position: absolute;
+            position: fixed;
             width: 200%;
             height: 200%;
             top: -50%;
@@ -39,6 +75,7 @@
                 radial-gradient(2px 2px at 160px 120px, #ffffff, rgba(0,0,0,0));
             background-repeat: repeat;
             animation: rotate 240s linear infinite;
+            pointer-events: none;
         }
 
         @keyframes rotate {
@@ -46,16 +83,23 @@
             100% { transform: rotate(360deg); }
         }
 
-        .container {
-            text-align: center;
-            position: relative;
-            width: 900px;
-            padding: 30px;
-            background: rgba(10, 10, 46, 0.8);
-            border-radius: 20px;
-            box-shadow: 0 0 40px rgba(62, 118, 244, 0.2);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(62, 118, 244, 0.2);
+        .menu-content {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            border: 1px solid rgba(62, 118, 244, 0.3);
+            box-shadow: 0 0 20px rgba(62, 118, 244, 0.1);
+        }
+
+        .instructions {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px;
+            text-align: left;
+            border: 1px solid rgba(62, 118, 244, 0.3);
+            box-shadow: 0 0 20px rgba(62, 118, 244, 0.1);
         }
 
         h1 {
@@ -67,15 +111,6 @@
             text-shadow: 0 0 10px rgba(62, 118, 244, 0.5),
                          0 0 20px rgba(62, 118, 244, 0.3),
                          0 0 30px rgba(62, 118, 244, 0.1);
-        }
-
-        .menu-content {
-            margin: 30px 0;
-            padding: 30px;
-            background: rgba(0, 0, 0, 0.4);
-            border-radius: 15px;
-            border: 1px solid rgba(62, 118, 244, 0.3);
-            box-shadow: 0 0 20px rgba(62, 118, 244, 0.1);
         }
 
         input[type="text"] {
@@ -139,16 +174,6 @@
         @keyframes shine {
             0% { transform: translateX(-100%) rotate(45deg); }
             100% { transform: translateX(100%) rotate(45deg); }
-        }
-
-        .instructions {
-            margin: 30px 0;
-            padding: 30px;
-            background: rgba(0, 0, 0, 0.4);
-            border-radius: 15px;
-            text-align: left;
-            border: 1px solid rgba(62, 118, 244, 0.3);
-            box-shadow: 0 0 20px rgba(62, 118, 244, 0.1);
         }
 
         .instructions h2 {
@@ -335,6 +360,20 @@
             margin-top: 10px;
             text-transform: uppercase;
             letter-spacing: 2px;
+        }
+
+        #game-screen {
+            display: none;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        #menu-screen {
+            display: block;
+        }
+
+        .screen {
+            width: 100%;
         }
     </style>
 </head>
