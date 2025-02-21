@@ -641,11 +641,16 @@
         function saveScore(name, score, level) {
             if (!database) return;  // Check if Firebase is initialized
             
+            // Sanitize inputs
+            const playerName = (name || 'Anonymous').trim().substring(0, 15);
+            const playerScore = parseInt(score) || 0;
+            const playerLevel = parseInt(level) || 1;
+            
             const scoreData = {
-                name: name,
-                score: score,
-                level: level,
-                timestamp: Date.now()
+                name: playerName,
+                score: playerScore,
+                level: playerLevel,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
             };
 
             // Get a reference to the highScores node
@@ -655,6 +660,7 @@
             scoresRef.push(scoreData)
                 .then(() => {
                     console.log('Score saved successfully');
+                    loadHighScores(); // Reload scores after saving
                 })
                 .catch((error) => {
                     console.error('Error saving score:', error);
@@ -665,24 +671,30 @@
             if (!database) return;  // Check if Firebase is initialized
             
             const scoresRef = database.ref('highScores');
+            
+            // Order by score in descending order and limit to top 10
             scoresRef.orderByChild('score')
                     .limitToLast(10)
                     .on('value', (snapshot) => {
-                const scores = [];
-                snapshot.forEach((childSnapshot) => {
-                    scores.push(childSnapshot.val());
-                });
-                highScores = scores.reverse();
-                
-                // Only update display if leaderboard tab is active
-                if (document.getElementById('leaderboard-tab').classList.contains('active')) {
-                    updateLeaderboard();
-                }
-            });
+                        const scores = [];
+                        snapshot.forEach((childSnapshot) => {
+                            scores.push(childSnapshot.val());
+                        });
+                        
+                        // Sort scores in descending order
+                        highScores = scores.sort((a, b) => b.score - a.score);
+                        
+                        // Update the display if leaderboard is visible
+                        if (document.getElementById('leaderboard-tab').classList.contains('active')) {
+                            updateLeaderboard();
+                        }
+                    });
         }
 
         function updateLeaderboard() {
             const leaderboardList = document.getElementById('leaderboard-list');
+            if (!leaderboardList) return;
+            
             leaderboardList.innerHTML = '';
             
             if (!highScores || highScores.length === 0) {
@@ -691,21 +703,28 @@
             }
             
             highScores.forEach((entry, index) => {
+                if (!entry || !entry.name || !entry.score) return; // Skip invalid entries
+                
                 const scoreEntry = document.createElement('div');
                 scoreEntry.className = 'leaderboard-entry';
                 
                 // Format the date
-                const date = new Date(entry.timestamp);
+                const date = new Date(entry.timestamp || Date.now());
                 const dateStr = date.toLocaleDateString();
+                
+                // Sanitize the display values
+                const displayName = entry.name.substring(0, 15) || 'Anonymous';
+                const displayScore = parseInt(entry.score) || 0;
+                const displayLevel = parseInt(entry.level) || 1;
                 
                 scoreEntry.innerHTML = `
                     <div class="score-left">
                         <span class="rank">#${index + 1}</span>
-                        <span class="player-name">${entry.name}</span>
+                        <span class="player-name">${displayName}</span>
                     </div>
                     <div class="score-right">
-                        <span class="score-value">Score: ${entry.score}</span>
-                        <span class="level-value">Level ${entry.level}</span>
+                        <span class="score-value">Score: ${displayScore}</span>
+                        <span class="level-value">Level ${displayLevel}</span>
                         <span class="date-value">${dateStr}</span>
                     </div>
                 `;
