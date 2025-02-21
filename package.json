@@ -1,0 +1,12 @@
+{
+  "name": "pattern-pulse",
+  "version": "1.0.0",
+  "description": "A space-themed asteroid clicking rhythm game",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
