@@ -1196,33 +1196,21 @@
                     if (distance < ASTEROID_SIZE) {
                         console.log('Hit!');
                         // Create explosion effect
-                        createParticles(tile.x, tile.y, '#FFD700');
-                        createParticles(tile.x, tile.y, '#FFA500');
+                        createParticles(tile.x, tile.y);
                         
-                        // Remove asteroid and update score
+                        // Remove asteroid
                         tiles.splice(i, 1);
-                        score += 10 * combo;
-                        combo++;
                         
-                        // Update UI with animation
+                        // Update score
+                        score += 10;
                         scoreDisplay.textContent = 'Score: ' + score;
-                        scoreDisplay.style.transform = 'scale(1.2)';
-                        setTimeout(() => {
-                            scoreDisplay.style.transform = 'scale(1)';
-                        }, 100);
                         
-                        // Increase difficulty based on score
+                        // Update level
                         if (score >= level * LEVEL_INCREASE_SCORE) {
                             level++;
                             levelDisplay.textContent = 'Level: ' + level;
-                            levelDisplay.style.transform = 'scale(1.2)';
-                            setTimeout(() => {
-                                levelDisplay.style.transform = 'scale(1)';
-                            }, 100);
-                            
-                            baseSpeed += SPEED_INCREASE * (level * 0.2);
-                            spawnInterval = Math.max(MIN_SPAWN_INTERVAL, 
-                                spawnInterval - (SPAWN_INTERVAL_DECREASE * (level * 0.15)));
+                            baseSpeed += SPEED_INCREASE;
+                            spawnInterval = Math.max(MIN_SPAWN_INTERVAL, spawnInterval - SPAWN_INTERVAL_DECREASE);
                         }
                         break;
                     }
@@ -1253,33 +1241,21 @@
                     
                     if (distance < ASTEROID_SIZE) {
                         // Create explosion effect
-                        createParticles(tile.x, tile.y, '#FFD700');
-                        createParticles(tile.x, tile.y, '#FFA500');
+                        createParticles(tile.x, tile.y);
                         
-                        // Remove asteroid and update score
+                        // Remove asteroid
                         tiles.splice(i, 1);
-                        score += 10 * combo;
-                        combo++;
                         
-                        // Update UI with animation
+                        // Update score
+                        score += 10;
                         scoreDisplay.textContent = 'Score: ' + score;
-                        scoreDisplay.style.transform = 'scale(1.2)';
-                        setTimeout(() => {
-                            scoreDisplay.style.transform = 'scale(1)';
-                        }, 100);
                         
-                        // Increase difficulty based on score
+                        // Update level
                         if (score >= level * LEVEL_INCREASE_SCORE) {
                             level++;
                             levelDisplay.textContent = 'Level: ' + level;
-                            levelDisplay.style.transform = 'scale(1.2)';
-                            setTimeout(() => {
-                                levelDisplay.style.transform = 'scale(1)';
-                            }, 100);
-                            
-                            baseSpeed += SPEED_INCREASE * (level * 0.2);
-                            spawnInterval = Math.max(MIN_SPAWN_INTERVAL, 
-                                spawnInterval - (SPAWN_INTERVAL_DECREASE * (level * 0.15)));
+                            baseSpeed += SPEED_INCREASE;
+                            spawnInterval = Math.max(MIN_SPAWN_INTERVAL, spawnInterval - SPAWN_INTERVAL_DECREASE);
                         }
                         break;
                     }
