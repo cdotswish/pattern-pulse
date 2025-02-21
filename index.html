@@ -713,8 +713,20 @@
 
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-
     <script>
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDFqxqZWxqRDGsXqvYqvp0_XpxXvB4sICg",
+            authDomain: "pattern-pulse.firebaseapp.com",
+            databaseURL: "https://pattern-pulse-default-rtdb.firebaseio.com",
+            projectId: "pattern-pulse",
+            storageBucket: "pattern-pulse.appspot.com",
+            messagingSenderId: "1234567890",
+            appId: "1:1234567890:web:1234567890abcdef"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        
         // Wait for DOM to load
         document.addEventListener('DOMContentLoaded', function() {
             // Get DOM elements
@@ -975,45 +987,56 @@
                     }
                 }, 100);
                 
+                // Save score to Firebase
+                const newScoreRef = database.ref('scores').push();
+                newScoreRef.set({
+                    playerName: currentPlayer,
+                    score: score,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
+                
+                // Update leaderboard
+                updateLeaderboard();
+                
                 // Show game over screen
                 mainMenu.style.display = 'block';
                 canvas.style.display = 'none';
                 ui.style.display = 'none';
-                
-                // Submit score to leaderboard
-                fetch('/api/score', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        playerName: currentPlayer,
-                        score: score
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    updateLeaderboard(data.leaderboard);
-                })
-                .catch(console.error);
             }
 
-            function updateLeaderboard(leaderboard) {
-                const list = document.getElementById('leaderboardList');
-                list.innerHTML = '';
-                
-                leaderboard.forEach((entry, index) => {
-                    const li = document.createElement('li');
-                    li.textContent = `${index + 1}. ${entry.playerName}: ${entry.score}`;
-                    list.appendChild(li);
-                });
+            function updateLeaderboard() {
+                database.ref('scores')
+                    .orderByChild('score')
+                    .limitToLast(10)
+                    .once('value')
+                    .then((snapshot) => {
+                        const scores = [];
+                        snapshot.forEach((childSnapshot) => {
+                            scores.push(childSnapshot.val());
+                        });
+                        
+                        // Sort scores in descending order
+                        scores.sort((a, b) => b.score - a.score);
+                        
+                        // Update leaderboard display
+                        const list = document.getElementById('leaderboardList');
+                        list.innerHTML = '';
+                        
+                        scores.forEach((entry, index) => {
+                            const li = document.createElement('li');
+                            li.textContent = `${index + 1}. ${entry.playerName}: ${entry.score}`;
+                            list.appendChild(li);
+                        });
+                    });
             }
             
             // Initial leaderboard load
-            fetch('/api/leaderboard')
-                .then(response => response.json())
-                .then(updateLeaderboard)
-                .catch(console.error);
+            updateLeaderboard();
+            
+            // Listen for new scores
+            database.ref('scores').on('child_added', () => {
+                updateLeaderboard();
+            });
                 
             // Initialize game
             function init() {
