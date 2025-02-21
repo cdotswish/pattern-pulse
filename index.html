@@ -177,6 +177,56 @@
             outline: none;
             border-color: #ffcc00;
         }
+        .audio-controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            border-radius: 25px;
+            border: 2px solid #ff3366;
+            z-index: 1000;
+        }
+        .audio-controls button {
+            background: none;
+            border: none;
+            color: #ff3366;
+            cursor: pointer;
+            font-size: 24px;
+            padding: 5px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .audio-controls button:hover {
+            color: #ffcc00;
+            transform: scale(1.1);
+        }
+        .volume-slider {
+            width: 100px;
+            -webkit-appearance: none;
+            background: rgba(255, 51, 102, 0.3);
+            height: 5px;
+            border-radius: 5px;
+            outline: none;
+        }
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 15px;
+            height: 15px;
+            background: #ff3366;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .volume-slider::-webkit-slider-thumb:hover {
+            background: #ffcc00;
+            transform: scale(1.2);
+        }
     </style>
 </head>
 <body>
@@ -212,6 +262,14 @@
             <!-- Leaderboard entries will be added here -->
         </ul>
     </div>
+
+    <div class="audio-controls">
+        <button id="toggleMusic" title="Toggle Music">🎵</button>
+        <input type="range" id="volumeSlider" class="volume-slider" min="0" max="1" step="0.1" value="0.5">
+    </div>
+    <audio id="backgroundMusic" loop>
+        <source src="https://cdn.pixabay.com/download/audio/2022/11/22/audio_febc508520.mp3" type="audio/mpeg">
+    </audio>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -273,6 +331,32 @@
         let audioCtx;
         let oscillator;
 
+        // Audio Control Setup
+        const backgroundMusic = document.getElementById('backgroundMusic');
+        const toggleMusicBtn = document.getElementById('toggleMusic');
+        const volumeSlider = document.getElementById('volumeSlider');
+        let isMusicPlaying = false;
+
+        // Set initial volume
+        backgroundMusic.volume = volumeSlider.value;
+
+        toggleMusicBtn.addEventListener('click', () => {
+            if (isMusicPlaying) {
+                backgroundMusic.pause();
+                toggleMusicBtn.textContent = '🎵';
+                toggleMusicBtn.style.color = '#ff3366';
+            } else {
+                backgroundMusic.play();
+                toggleMusicBtn.textContent = '🔇';
+                toggleMusicBtn.style.color = '#ffcc00';
+            }
+            isMusicPlaying = !isMusicPlaying;
+        });
+
+        volumeSlider.addEventListener('input', (e) => {
+            backgroundMusic.volume = e.target.value;
+        });
+
         // Menu controls
         playBtn.addEventListener('click', () => {
             const playerName = playerNameInput.value.trim();
@@ -289,6 +373,15 @@
             mainMenu.style.display = 'none';
             canvas.style.display = 'block';
             ui.style.display = 'block';
+            
+            // Start background music if not already playing
+            if (!isMusicPlaying) {
+                backgroundMusic.play();
+                toggleMusicBtn.textContent = '🔇';
+                toggleMusicBtn.style.color = '#ffcc00';
+                isMusicPlaying = true;
+            }
+            
             startGame();
         });
 
