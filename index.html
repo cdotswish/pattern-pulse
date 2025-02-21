@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>Pattern Pulse</title>
     <style>
         body {
@@ -24,6 +26,13 @@
             justify-content: center;
             align-items: center;
             z-index: 1;
+            touch-action: none;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
         }
 
         canvas {
@@ -297,6 +306,67 @@
             background: #ffcc00;
             transform: scale(1.2);
         }
+
+        @media (max-width: 768px) {
+            .menu {
+                width: 90%;
+                max-width: 400px;
+                padding: 15px;
+            }
+
+            .btn {
+                font-size: 16px;
+                padding: 12px 20px;
+                margin: 8px 0;
+                width: 100%;
+            }
+
+            #playerName {
+                font-size: 16px;
+                padding: 10px;
+                width: 90%;
+            }
+
+            #ui {
+                font-size: 16px;
+                padding: 10px;
+            }
+
+            .leaderboard {
+                width: 90%;
+                max-width: 400px;
+                font-size: 14px;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .menu {
+                width: 400px;
+                padding: 20px;
+            }
+
+            .btn {
+                font-size: 18px;
+                padding: 15px 30px;
+                margin: 10px 0;
+            }
+
+            #playerName {
+                font-size: 18px;
+                padding: 12px;
+                width: 80%;
+            }
+
+            #ui {
+                font-size: 18px;
+                padding: 15px;
+            }
+
+            .leaderboard {
+                width: 500px;
+                font-size: 16px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -381,8 +451,25 @@
 
         // Set canvas size
         function resizeCanvas() {
-            canvas.width = Math.min(800, window.innerWidth - 40);
-            canvas.height = Math.min(600, window.innerHeight - 40);
+            const containerWidth = window.innerWidth;
+            const containerHeight = window.innerHeight;
+            
+            // Calculate the best size while maintaining aspect ratio
+            const aspectRatio = 16/9;
+            let newWidth = containerWidth * 0.9;
+            let newHeight = containerHeight * 0.9;
+            
+            if (newWidth / newHeight > aspectRatio) {
+                newWidth = newHeight * aspectRatio;
+            } else {
+                newHeight = newWidth / aspectRatio;
+            }
+            
+            canvas.width = Math.floor(newWidth);
+            canvas.height = Math.floor(newHeight);
+            
+            // Update game scale for responsive hit detection
+            gameScale = canvas.width / 800; // 800 is our base width
         }
 
         // Initial canvas setup
@@ -399,6 +486,7 @@
         let spawnInterval = 1000;
         let lastSpawnTime = 0;
         let combo = 0;
+        let gameScale = 1;
 
         // Update high score display
         highScoreDisplay.textContent = `High Score: ${highScore}`;
@@ -727,18 +815,40 @@
         }
 
         // Handle clicks with proper coordinates
-        canvas.addEventListener('click', (e) => {
+        function handleInput(e) {
+            e.preventDefault();
             if (!gameStarted) return;
 
             const rect = canvas.getBoundingClientRect();
-            const scaleX = canvas.width / rect.width;
-            const scaleY = canvas.height / rect.height;
-            
-            const mouseX = (e.clientX - rect.left) * scaleX;
-            const mouseY = (e.clientY - rect.top) * scaleY;
+            let x, y;
 
+            if (e.type.startsWith('touch')) {
+                const touch = e.touches[0] || e.changedTouches[0];
+                x = touch.clientX - rect.left;
+                y = touch.clientY - rect.top;
+            } else {
+                x = e.clientX - rect.left;
+                y = e.clientY - rect.top;
+            }
+
+            // Scale coordinates
+            x = (x / rect.width) * canvas.width;
+            y = (y / rect.height) * canvas.height;
+
+            checkTileClick(x, y);
+        }
+
+        function checkTileClick(x, y) {
             for (let i = tiles.length - 1; i >= 0; i--) {
-                if (tiles[i].isClicked(mouseX, mouseY)) {
+                const tile = tiles[i];
+                const scaledSize = tile.width * gameScale;
+                
+                // Adjust hit detection for scaled tiles
+                const dx = x - tile.x;
+                const dy = y - tile.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < (scaledSize / 2)) {
                     tiles.splice(i, 1);
                     score += 10 * (combo + 1);
                     combo++;
@@ -755,7 +865,14 @@
                     break;
                 }
             }
-        });
+        }
+
+        // Add both touch and mouse events
+        canvas.addEventListener('touchstart', handleInput, { passive: false });
+        canvas.addEventListener('mousedown', handleInput);
+
+        // Prevent scrolling on touch devices
+        canvas.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
     </script>
 </body>
 </html>
