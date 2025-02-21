@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>Asteroid Blaster</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
@@ -372,6 +374,14 @@
             max-width: 100%;
             height: auto;
             display: block;
+            touch-action: none;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         @media (max-width: 480px) {
@@ -1025,6 +1035,52 @@
                 }
             }
         });
+
+        canvas.addEventListener('touchstart', handleTouch, { passive: false });
+        canvas.addEventListener('touchmove', handleTouch, { passive: false });
+        canvas.addEventListener('touchend', handleTouch, { passive: false });
+
+        function handleTouch(event) {
+            // Prevent default touch behavior
+            event.preventDefault();
+            event.stopPropagation();
+            
+            // Get canvas scaling
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            
+            // Handle all touches
+            const touches = event.type === 'touchend' ? event.changedTouches : event.touches;
+            for (let i = 0; i < touches.length; i++) {
+                const touch = touches[i];
+                const x = (touch.clientX - rect.left) * scaleX;
+                const y = (touch.clientY - rect.top) * scaleY;
+                
+                // Check each asteroid
+                asteroids.forEach((asteroid, index) => {
+                    const dx = asteroid.x - x;
+                    const dy = asteroid.y - y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < asteroid.size) {
+                        // Create explosion effect
+                        explosions.push(new Explosion(asteroid.x, asteroid.y, asteroid.size));
+                        
+                        // Play sound
+                        playExplosionSound();
+                        
+                        // Remove asteroid and update score
+                        asteroids.splice(index, 1);
+                        score += 10 * level;
+                        progress++;
+                        updateStats();
+                    }
+                });
+            }
+            
+            return false;
+        }
 
         // Load high scores but don't display them immediately
         loadHighScores();
