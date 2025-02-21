@@ -124,10 +124,15 @@
         .leaderboard-entry {
             display: flex;
             justify-content: space-between;
-            padding: 10px;
+            padding: 15px;
             background-color: rgba(255, 255, 255, 0.1);
-            margin: 5px 0;
-            border-radius: 5px;
+            margin: 10px 0;
+            border-radius: 8px;
+            font-size: 18px;
+            transition: background-color 0.3s;
+        }
+        .leaderboard-entry:hover {
+            background-color: rgba(255, 255, 255, 0.2);
         }
         input[type="text"] {
             padding: 10px;
@@ -328,12 +333,12 @@
         function showTab(tabName) {
             // Hide all tab content
             document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.style.display = 'none';
+                tab.classList.remove('active');
             });
             
             // Show selected tab
             if (tabName === 'leaderboard') {
-                document.getElementById('leaderboard-tab').style.display = 'block';
+                document.getElementById('leaderboard-tab').classList.add('active');
             }
         }
 
